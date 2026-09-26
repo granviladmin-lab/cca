@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="CCA Consulting provides managed IT support, cloud and cybersecurity for small and mid-sized organizations. Call (704) 234-7174 or email info@cca1.net.">
+<title>CCA Consulting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+html{color-scheme:light}
+body{margin:0;-webkit-font-smoothing:antialiased}
+img{max-width:100%}
+[hidden]{display:none!important}
+:root{
+  --bg:#F3F5F7; --surface:#FFFFFF; --surface-2:#E8ECF1; --ink:#0E1822; --ink-2:#4A5866; --line:#D5DCE3;
+  --accent:#2750E8; --accent-ink:#FFFFFF; --accent-soft:#DDE5FF; --amber:#D98A12; --ok:#16935B; --crit:#C9392F;
+  --grid:rgba(14,24,34,.06);
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0B1118; --surface:#121B25; --surface-2:#18232F; --ink:#E8EEF4; --ink-2:#98A7B6; --line:#243241;
+    --accent:#6F8CFF; --accent-ink:#0B1118; --accent-soft:#1B2650; --amber:#F2B03E; --ok:#3CC98A; --crit:#FF6B5E;
+    --grid:rgba(232,238,244,.05);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0B1118; --surface:#121B25; --surface-2:#18232F; --ink:#E8EEF4; --ink-2:#98A7B6; --line:#243241;
+  --accent:#6F8CFF; --accent-ink:#0B1118; --accent-soft:#1B2650; --amber:#F2B03E; --ok:#3CC98A; --crit:#FF6B5E;
+  --grid:rgba(232,238,244,.05);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;padding-inline:16px}
+.wrap{max-width:1160px;margin-inline:auto}
+h1,h2,h3{font-family:var(--display);line-height:1.08;text-wrap:balance;margin:0;letter-spacing:-.02em}
+h1{font-size:clamp(2.4rem,6vw,4.4rem);font-weight:800}
+h2{font-size:clamp(1.8rem,3.6vw,2.6rem);font-weight:700}
+h3{font-size:1.25rem;font-weight:700;letter-spacing:-.01em}
+p{margin:0}
+a{color:var(--accent)}
+.lede{font-size:1.15rem;color:var(--ink-2);max-width:58ch}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+
+/* Header */
+header.site{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin-inline:-16px;padding-inline:16px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-family:var(--display);font-weight:800;font-size:1.2rem;letter-spacing:-.02em}
+.brand .mark{flex:none;display:grid;place-items:center;height:30px;padding:0 7px;border-radius:7px;background:var(--accent);color:var(--accent-ink);font-size:.78rem;letter-spacing:.04em}
+nav.main{display:flex;gap:4px;flex-wrap:wrap}
+nav.main a{text-decoration:none;color:var(--ink-2);font-weight:500;padding:8px 12px;border-radius:8px;font-size:.95rem}
+nav.main a:hover{color:var(--ink);background:var(--surface-2)}
+nav.main a[aria-current="page"]{color:var(--ink);background:var(--surface-2)}
+.btn{display:inline-flex;align-items:center;gap:8px;font:600 .95rem var(--body);padding:12px 18px;border-radius:8px;border:1px solid transparent;text-decoration:none;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:var(--line);color:var(--ink);background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.menu-btn{display:none}
+@media (max-width:760px){
+  .menu-btn{display:inline-flex;padding:8px 12px}
+  nav.main{display:none;position:absolute;left:0;right:0;top:100%;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 16px 16px;flex-direction:column}
+  nav.main.open{display:flex}
+  .bar .cta-top{display:none}
+}
+
+/* Pages */
+main section.page{padding-block:48px 72px}
+main section.page[hidden]{display:none!important}
+.stack{display:flex;flex-direction:column;gap:20px}
+
+/* Hero */
+html,body{overflow-x:clip}
+.hero{position:relative;padding-block:72px 110px}
+.hero-bg{position:absolute;top:-48px;bottom:0;left:calc(50% - 50vw);right:calc(50% - 50vw);z-index:0;overflow:hidden;pointer-events:none}
+.hero-bg img{width:100%;height:100%;object-fit:cover;object-position:center 45%;-webkit-mask-image:linear-gradient(to bottom,#000 45%,transparent 100%);mask-image:linear-gradient(to bottom,#000 45%,transparent 100%)}
+.hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 88%,transparent) 30%,color-mix(in srgb,var(--bg) 35%,transparent) 65%,color-mix(in srgb,var(--bg) 10%,transparent) 100%)}
+.hero-copy{position:relative;z-index:1;max-width:640px}
+.hero .actions{display:flex;gap:12px;flex-wrap:wrap}
+.hero .btn.ghost{background:color-mix(in srgb,var(--bg) 70%,transparent)}
+@media (max-width:760px){.hero-bg::after{background:color-mix(in srgb,var(--bg) 72%,transparent)}}
+.status-line{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent);animation:pulse 2.4s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+/* Metrics strip */
+.metrics{position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:var(--r);background:var(--surface);margin-top:0}
+.metrics > div{padding:22px 24px;border-left:1px solid var(--line)}
+.metrics > div:first-child{border-left:0}
+.metrics .v{font-family:var(--display);font-weight:800;font-size:2rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.metrics > div{display:flex;flex-direction:column;gap:6px}
+.metrics .k{color:var(--ink-2);font-size:.9rem;flex:1}
+.metrics .src{font-family:var(--mono);font-size:.7rem;letter-spacing:.04em;color:var(--ink-2);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;margin-top:6px}
+.metrics .src:hover{color:var(--accent)}
+.metrics-head{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:baseline;gap:8px 16px;flex-wrap:wrap;margin-bottom:12px}
+.metrics-head .note{font-size:.85rem;color:var(--ink-2)}
+@media (max-width:760px){.metrics{grid-template-columns:1fr 1fr}.metrics > div:nth-child(3){border-left:0}.metrics > div:nth-child(n+3){border-top:1px solid var(--line)}}
+
+/* Service grid */
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap;margin-block:72px 28px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+@media (max-width:900px){.grid3{grid-template-columns:1fr 1fr}}
+@media (max-width:600px){.grid3{grid-template-columns:1fr}}
+.svc{background:var(--surface);padding:0 28px 28px;display:flex;flex-direction:column;gap:12px}
+.svc .ph{margin:0 -28px 8px;aspect-ratio:16/10;overflow:hidden;background:var(--surface-2)}
+.svc .ph img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.svc:hover .ph img{transform:scale(1.04)}
+.svc .ico{margin-top:-38px;position:relative;box-shadow:0 0 0 4px var(--surface)}
+.svc .ico{width:44px;height:44px;border-radius:10px;background:var(--accent);color:var(--accent-ink)!important;display:grid;place-items:center;color:var(--accent)}
+.svc p{color:var(--ink-2)}
+.svc .spec{margin-top:auto;padding-top:12px;border-top:1px dashed var(--line);font-family:var(--mono);font-size:.78rem;color:var(--ink-2)}
+
+/* SLA table */
+.sla-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table.sla{width:100%;border-collapse:collapse;min-width:560px}
+.sla th,.sla td{text-align:left;padding:14px 18px;border-bottom:1px solid var(--line)}
+.sla tr:last-child td{border-bottom:0}
+.sla th{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+.sla td.mono{font-size:.9rem}
+.pill{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:600;padding:3px 8px;border-radius:99px}
+.p1{background:color-mix(in srgb,var(--crit) 16%,transparent);color:var(--crit)}
+.p2{background:color-mix(in srgb,var(--amber) 18%,transparent);color:var(--amber)}
+.p3{background:var(--accent-soft);color:var(--accent)}
+.p4{background:var(--surface-2);color:var(--ink-2)}
+
+/* Process */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;counter-reset:s}
+@media (max-width:900px){.steps{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.steps{grid-template-columns:1fr}}
+.step{border-top:2px solid var(--ink);padding-top:16px;display:flex;flex-direction:column;gap:8px}
+.step .n{font-family:var(--mono);font-size:.8rem;color:var(--accent)}
+.step p{color:var(--ink-2);font-size:.95rem}
+
+/* CTA band */
+.band{margin-top:72px;border-radius:14px;padding:48px 40px;background:linear-gradient(90deg,rgba(8,14,22,.94) 0%,rgba(8,14,22,.78) 55%,rgba(8,14,22,.45) 100%),url("img/band-code.jpg") center/cover,#0B1118;color:#F3F5F7;display:grid;grid-template-columns:1.4fr auto;gap:24px;align-items:center;position:relative;overflow:hidden}
+.band p{color:#C3CDD8}
+.band .btn.primary{background:#F3F5F7;color:#0E1822}
+@media (max-width:700px){.band{grid-template-columns:1fr;padding:28px}}
+
+/* About */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+@media (max-width:860px){.two{grid-template-columns:1fr}}
+.timeline{display:flex;flex-direction:column;border-left:2px solid var(--line);padding-left:24px;gap:28px}
+.timeline .y{font-family:var(--mono);font-size:.8rem;color:var(--accent);position:relative}
+.timeline .y::before{content:"";position:absolute;left:-31px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--accent)}
+.timeline p{color:var(--ink-2)}
+.values{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:520px){.values{grid-template-columns:1fr}}
+.value{padding:20px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.value p{color:var(--ink-2);font-size:.95rem}
+.certs{display:flex;flex-wrap:wrap;gap:8px}
+.certs span{font-family:var(--mono);font-size:.78rem;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+
+.about-ph{margin:0;display:flex;flex-direction:column;gap:10px}
+.about-ph img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:14px;display:block}
+.about-ph figcaption{font-size:.85rem;color:var(--ink-2)}
+
+/* Contact */
+.contact-wrap{max-width:640px}
+.contact-card{margin-top:8px;display:flex;flex-direction:column;gap:18px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.row .k{color:var(--ink-2);font-size:.85rem}
+.contact-card .mono{font-size:1.25rem;font-weight:600}
+.contact-card .mono a{color:var(--ink);text-decoration:none}
+.contact-card .mono a:hover{color:var(--accent)}
+.copy{font:600 .8rem var(--body);background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:5px 10px;cursor:pointer}
+.copy:hover{background:var(--surface-2)}
+
+footer{border-top:1px solid var(--line);padding-block:32px;color:var(--ink-2);font-size:.9rem;margin-inline:-16px;padding-inline:16px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="#home" data-link>
+      <span class="mark" aria-hidden="true">CCA</span>
+      CCA Consulting
+    </a>
+    <button class="btn ghost menu-btn" id="menuBtn" aria-expanded="false" aria-controls="mainNav">Menu</button>
+    <nav class="main" id="mainNav" aria-label="Main">
+      <a href="#home" data-link>Home</a>
+      <a href="#services" data-link>Services</a>
+      <a href="#contact" data-link>Contact</a>
+    </nav>
+    <a class="btn primary cta-top" href="#contact" data-link>Book an assessment</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- HOME -->
+<section class="page" id="page-home" data-page="home">
+  <div class="hero">
+    <div class="hero-bg" aria-hidden="true"><img src="img/hero-sierra.jpg" alt="" width="2000" height="1333"></div>
+    <div class="stack hero-copy">
+      <div class="status-line">Managed IT · Cloud · Cybersecurity</div>
+      <h1>IT that keeps working while you get on with yours.</h1>
+      <p class="lede">Managed support, cloud and cybersecurity for small and mid-sized organizations. One flat fee, a real engineer on the phone, and a network that stays patched.</p>
+      <div class="actions">
+        <a class="btn primary" href="#contact" data-link>Book a free assessment</a>
+        <a class="btn ghost" href="#services" data-link>See services</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics-head">
+    <span class="eyebrow">The threat, in numbers</span>
+    <span class="note">Latest published figures from the FBI, IBM and Verizon</span>
+  </div>
+  <div class="metrics">
+    <div><div class="v">$20.9B</div><div class="k">Lost to cybercrime reported to the FBI in 2025, across 1,008,597 complaints</div><a class="src" href="https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf" target="_blank" rel="noopener">FBI IC3 2025 Report</a></div>
+    <div><div class="v">$7.7B</div><div class="k">Lost by Americans aged 60 and over in 2025, more than any other age group</div><a class="src" href="https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf" target="_blank" rel="noopener">FBI IC3 2025 Report</a></div>
+    <div><div class="v">$4.99M</div><div class="k">Global average cost of a data breach, a record high</div><a class="src" href="https://newsroom.ibm.com/2026-07-29-ibm-study-one-in-four-malicious-breaches-are-ai-enabled,-costing-companies-6-million-on-average" target="_blank" rel="noopener">IBM Cost of a Data Breach 2026</a></div>
+    <div><div class="v">31%</div><div class="k">Of breaches start with an unpatched vulnerability being exploited</div><a class="src" href="https://www.verizon.com/about/news/breach-industry-wide-dbir-finds" target="_blank" rel="noopener">Verizon DBIR 2026</a></div>
+  </div>
+
+  <div class="sec-head">
+    <div class="stack" style="gap:10px"><span class="eyebrow">What we run for you</span><h2>Core services</h2></div>
+    <a class="btn ghost" href="#services" data-link>All services</a>
+  </div>
+  <div class="grid3" id="homeServices"></div>
+
+  <div class="band">
+    <div class="stack" style="gap:10px">
+      <h2>Not sure where you stand?</h2>
+      <p>Our free assessment ends with a written risk report you keep, whether you hire us or not.</p>
+    </div>
+    <a class="btn primary" href="#contact" data-link>Book an assessment</a>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="page" id="page-services" data-page="services" hidden>
+  <div class="stack" style="max-width:760px">
+    <span class="eyebrow">Services</span>
+    <h1>Everything your office runs on, looked after.</h1>
+    <p class="lede">Pick a single service or hand us the whole stack. Every plan includes monitoring, documentation and a named account engineer.</p>
+  </div>
+  <div class="grid3" id="allServices" style="margin-top:40px"></div>
+
+</section>
+
+<!-- ABOUT -->
+<!-- About page: parked for future use. To restore, add "about" back to the pages list in the script and re-add the nav link. -->
+<section class="page" id="page-about" data-page="about" hidden>
+  <div class="two">
+    <div class="stack">
+      <span class="eyebrow">About us</span>
+      <h1>A small team that answers its own phone.</h1>
+      <p class="lede">CCA Consulting started with two engineers who were tired of watching local businesses get sold software they didn't need. We now look after offices, clinics, nonprofits and schools, and we still write every client's network documentation by hand.</p>
+      <div class="certs" aria-label="Certifications">
+        <span>CompTIA Security+</span><span>Microsoft 365 Certified</span><span>CISSP</span><span>Cisco CCNA</span><span>AWS Solutions Architect</span>
+      </div>
+    </div>
+    <div class="stack" style="gap:32px">
+    <figure class="about-ph"><img src="img/about-workspace.jpg" alt="Desk with a monitor, tablet and plant in a quiet studio" loading="lazy" width="1400" height="933"><figcaption>We set up and support workspaces like this every week, from single desks to whole offices.</figcaption></figure>
+    <div class="timeline">
+      <div class="stack" style="gap:6px"><span class="y">2014</span><h3>Founded</h3><p>Two engineers, one van, and a helpdesk run from a spare room.</p></div>
+      <div class="stack" style="gap:6px"><span class="y">2017</span><h3>24/7 monitoring</h3><p>Launched our own network operations center with overnight on-call.</p></div>
+      <div class="stack" style="gap:6px"><span class="y">2021</span><h3>Security practice</h3><p>Added managed detection and response after a surge of phishing attacks on clients.</p></div>
+      <div class="stack" style="gap:6px"><span class="y">2025</span><h3>Community training</h3><p>Began free AI-scam and cyber-safety workshops for older adults at local libraries.</p></div>
+    </div>
+    </div>
+  </div>
+
+  <div class="sec-head"><div class="stack" style="gap:10px"><span class="eyebrow">How we work</span><h2>What you can hold us to</h2></div></div>
+  <div class="values">
+    <div class="value"><h3>Plain answers</h3><p>We explain what broke and what we did in language your whole team understands.</p></div>
+    <div class="value"><h3>No lock-in</h3><p>Month-to-month contracts. You own your accounts, passwords and documentation.</p></div>
+    <div class="value"><h3>Security by default</h3><p>MFA, tested backups and least-privilege access come standard in every plan.</p></div>
+    <div class="value"><h3>Measured, reported</h3><p>A monthly report shows tickets, patch status and risks, with no padding.</p></div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="page" id="page-contact" data-page="contact" hidden>
+  <div class="contact-wrap">
+    <div class="stack">
+      <span class="eyebrow">Contact</span>
+      <h1>Book a free assessment.</h1>
+      <p class="lede">Call or email to book your free assessment. An engineer, not a salesperson, will get back to you.</p>
+      <div class="contact-card">
+        <div class="row"><div><div class="k">Email</div><div class="mono" id="em"><a href="mailto:info@cca1.net">info@cca1.net</a></div></div><button class="copy" data-copy="em">Copy</button></div>
+        <div class="row"><div><div class="k">Phone</div><div class="mono" id="ph"><a href="tel:+17042347174">(704) 234-7174</a></div></div><button class="copy" data-copy="ph">Copy</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 CCA Consulting. Managed IT, cloud and cybersecurity. Photos: Wikimedia Commons, public domain and CC0.</span>
+    <span class="mono">(704) 234-7174 · info@cca1.net</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // ---------- Services data ----------
+  const I = {
+    help:'<path d="M4 13a8 8 0 0 1 16 0v4a2 2 0 0 1-2 2h-2v-6h4M4 13v4a2 2 0 0 0 2 2h2v-6H4"/>',
+    shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    cloud:'<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4.25 4.25 0 0 1-.5 8.5z"/>',
+    backup:'<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/>',
+    net:'<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><path d="M6 9v3h12V9M12 12v3"/>',
+    people:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>'
+  };
+  const services = [
+    {img:'svc-helpdesk.jpg',alt:'Laptop, keyboard and coffee mug on a wooden desk',i:'help',t:'Managed helpdesk',d:'Unlimited remote support for your staff by phone, email or portal, answered by our own engineers.',s:'Phone · email · portal'},
+    {img:'svc-security.jpg',alt:'Close-up of a backlit laptop keyboard',i:'shield',t:'Cybersecurity',d:'Endpoint detection, email filtering, MFA rollout and regular vulnerability scans with a fix list.',s:'EDR · email security · MFA'},
+    {img:'svc-cloud.jpg',alt:'Clouds seen from above in sunlight',i:'cloud',t:'Cloud & Microsoft 365',d:'Migrations, licensing clean-up, SharePoint structure and conditional access done properly.',s:'M365 · Azure · AWS'},
+    {img:'svc-backup.jpg',alt:'Open hard drive showing the platter and read arm',i:'backup',t:'Backup & recovery',d:'Immutable off-site backups with documented restore tests, so you know they work.',s:'Immutable · off-site · tested'},
+    {img:'svc-network.jpg',alt:'Rear of a server chassis with power supplies and network cabling',i:'net',t:'Networks & Wi-Fi',d:'Firewalls, switching and site surveys, designed, installed and monitored for performance.',s:'Wi-Fi 6E · SD-WAN'},
+    {img:'svc-training.jpg',alt:'Tidy office desk with a computer and white chairs',i:'people',t:'Cyber-safety training',d:'Phishing simulations for staff, plus friendly workshops that help older adults spot AI voice and deepfake scams.',s:'Phishing simulations · community classes'}
+  ];
+  const card = s => `<article class="svc"><div class="ph"><img src="img/${s.img}" alt="${s.alt}" loading="lazy" width="900" height="600"></div><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[s.i]}</svg></div><h3>${s.t}</h3><p>${s.d}</p><div class="spec">${s.s}</div></article>`;
+  document.getElementById('homeServices').innerHTML = services.slice(0,3).map(card).join('');
+  document.getElementById('allServices').innerHTML = services.map(card).join('');
+
+  // ---------- Routing ----------
+  const pages = ['home','services','contact'];
+  const nav = document.getElementById('mainNav'), menuBtn = document.getElementById('menuBtn');
+  function show(name, scroll){
+    if(!pages.includes(name)) name='home';
+    document.querySelectorAll('section.page').forEach(s => s.hidden = s.dataset.page !== name);
+    nav.querySelectorAll('a').forEach(a => a.getAttribute('href')==='#'+name ? a.setAttribute('aria-current','page') : a.removeAttribute('aria-current'));
+    nav.classList.remove('open'); menuBtn.setAttribute('aria-expanded','false');
+    if(scroll) window.scrollTo({top:0,behavior:'instant'});
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[data-link]'); if(!a) return;
+    e.preventDefault(); const n = a.getAttribute('href').slice(1);
+    try{ history.pushState(null,'','#'+n); }catch(_){}
+    show(n,true);
+  });
+  window.addEventListener('popstate', () => show(location.hash.slice(1),true));
+  window.addEventListener('hashchange', () => show(location.hash.slice(1),true));
+  menuBtn.addEventListener('click', () => { const o = nav.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', String(o)); });
+  show(location.hash.slice(1), false);
+
+  // ---------- Copy buttons ----------
+  document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', () => {
+    const el = document.getElementById(b.dataset.copy);
+    const done = () => { b.textContent='Copied'; setTimeout(()=>b.textContent='Copy',1500); };
+    const fallback = () => { const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent='Selected'; setTimeout(()=>b.textContent='Copy',1500); };
+    try{ navigator.clipboard.writeText(el.textContent).then(done, fallback); }catch(_){ fallback(); }
+  }));
+
+
+})();
+</script>
+</body>
+</html>
