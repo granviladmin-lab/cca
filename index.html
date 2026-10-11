@@ -118,6 +118,13 @@ html,body{overflow-x:clip}
 .svc p{color:var(--ink-2)}
 .svc .spec{margin-top:auto;padding-top:12px;border-top:1px dashed var(--line);font-family:var(--mono);font-size:.78rem;color:var(--ink-2)}
 
+/* Client tools */
+.tools{margin-top:28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:20px 24px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.tools .ico{width:44px;height:44px;border-radius:10px;background:var(--surface-2);color:var(--accent);display:grid;place-items:center;flex:none}
+.tools .txt{flex:1;min-width:220px}
+.tools h3{margin:0}
+.tools p{margin:4px 0 0;color:var(--ink-2)}
+
 /* SLA table */
 .sla-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 table.sla{width:100%;border-collapse:collapse;min-width:560px}
@@ -248,6 +255,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
     <p class="lede">Pick a single service or hand us the whole stack. Every plan includes monitoring, documentation and a named account engineer.</p>
   </div>
   <div class="grid3" id="allServices" style="margin-top:40px"></div>
+  <div class="tools">
+    <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    <div class="txt"><span class="eyebrow">Client tools</span><h3>Resident Underwriter</h3><p>Financial underwriting simulator for senior-living communities. Password required.</p></div>
+    <a class="btn ghost" href="underwriter/">Open tool</a>
+  </div>
 
 </section>
 
