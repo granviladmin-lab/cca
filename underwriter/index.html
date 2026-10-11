@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resident Underwriter</title>
+<style>
+:root {
+  --bg: #f6f6f3; --panel: #ffffff; --ink: #1d2124; --muted: #666d72; --line: #dcdcd6;
+  --accent: #2f5d50; --accent-soft: #e2ece8; --band: #b9d3ca; --life: #b07a2a;
+  --ok: #2f7a4a; --warn: #b7791f; --bad: #b23b3b; --il: #7aa595; --al: #d6a04c; --sn: #b5564e;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181a; --panel: #1e2224; --ink: #e7e9ea; --muted: #9aa2a7; --line: #33393c;
+    --accent: #7fbfa9; --accent-soft: #23332e; --band: #2f5247; --life: #e0aa55;
+    --ok: #6cc28a; --warn: #e3b25a; --bad: #e57373; --il: #6f9e8e; --al: #d1a253; --sn: #c96a61;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181a; --panel: #1e2224; --ink: #e7e9ea; --muted: #9aa2a7; --line: #33393c;
+  --accent: #7fbfa9; --accent-soft: #23332e; --band: #2f5247; --life: #e0aa55;
+  --ok: #6cc28a; --warn: #e3b25a; --bad: #e57373; --il: #6f9e8e; --al: #d1a253; --sn: #c96a61;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+header select { width: auto; max-width: 260px; }
+header h1 { font-size: 16px; margin: 0 12px 0 0; }
+header .spacer { flex: 1; }
+button, select, input { font: inherit; color: inherit; }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+button.primary { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+button:hover { border-color: var(--accent); }
+main { display: grid; grid-template-columns: minmax(320px, 430px) 1fr; gap: 16px; padding: 16px; max-width: 1500px; margin: 0 auto; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+.panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; }
+.panel h3 { font-size: 13px; margin: 12px 0 6px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.grid.three { grid-template-columns: 1fr 1fr 1fr; }
+label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; min-width: 0; }
+label.check { flex-direction: row; align-items: center; gap: 6px; color: var(--ink); }
+input[type=number], input[type=text], select { width: 100%; padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+.policy { border: 1px dashed var(--line); border-radius: 8px; padding: 10px; margin-top: 10px; }
+.policy .head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.policy .head input[type=text] { flex: 1; }
+.new { display: inline-block; font-size: 10px; background: var(--life); color: var(--panel); border-radius: 4px; padding: 1px 5px; margin-left: 6px; letter-spacing: .03em; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.kpi { background: var(--bg); border-radius: 8px; padding: 10px; }
+.kpi .v { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi .l { font-size: 12px; color: var(--muted); }
+.kpi .d { font-size: 12px; margin-top: 2px; }
+.rating { font-size: 26px; font-weight: 700; }
+.rating.Approve { color: var(--ok); } .rating.Review { color: var(--warn); } .rating.Decline { color: var(--bad); }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.legend i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 12px; }
+th, td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+.tablewrap { max-height: 360px; overflow: auto; }
+.muted { color: var(--muted); font-size: 12px; }
+#portfolio td button { padding: 2px 6px; font-size: 12px; }
+@media print {
+  header, #inputs, .noprint { display: none !important; }
+  main { grid-template-columns: 1fr; }
+  .tablewrap { max-height: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Resident Underwriter</h1>
+  <select id="applicantSel" aria-label="Applicant"></select>
+  <button id="newBtn">New</button>
+  <button id="saveBtn">Save</button>
+  <button id="delBtn">Delete</button>
+  <span class="spacer"></span>
+  <label class="check" style="font-size:12px">Simulations
+    <select id="sims"><option>500</option><option>1000</option><option selected>2500</option><option>5000</option></select></label>
+  <button id="importBtn">Import</button>
+  <button id="exportBtn">Export</button>
+  <button id="csvBtn">CSV</button>
+  <button id="printBtn">Print</button>
+  <button class="primary" id="runBtn">Run</button>
+  <input type="file" id="importFile" accept=".json,application/json" hidden>
+</header>
+
+<main>
+  <section id="inputs"></section>
+  <section id="results">
+    <div class="panel"><h2>Result <span class="muted" id="runInfo"></span></h2>
+      <div class="kpis" id="kpis"></div>
+    </div>
+    <div class="panel"><h2>Life insurance impact <span class="new">NEW</span></h2>
+      <div class="kpis" id="lifeKpis"></div>
+    </div>
+    <div class="panel"><h2>Projected net worth</h2>
+      <svg class="chart" id="nwChart" viewBox="0 0 800 280"></svg>
+      <div class="legend"><span><i style="background:var(--band)"></i>10th–90th percentile</span><span><i style="background:var(--accent)"></i>Median</span><span><i style="background:var(--life)"></i>Life insurance value (avg)</span></div>
+    </div>
+    <div class="panel"><h2>Expected subsidy per year</h2>
+      <svg class="chart" id="subChart" viewBox="0 0 800 220"></svg>
+    </div>
+    <div class="panel"><h2>Care level <span class="muted">expected residents</span></h2>
+      <svg class="chart" id="careChart" viewBox="0 0 800 200"></svg>
+      <div class="legend"><span><i style="background:var(--il)"></i>Independent living</span><span><i style="background:var(--al)"></i>Assisted living</span><span><i style="background:var(--sn)"></i>Skilled nursing</span></div>
+    </div>
+    <div class="panel"><h2>Yearly projection</h2>
+      <div class="tablewrap"><table id="yearTable"></table></div>
+    </div>
+    <div class="panel noprint"><h2>Portfolio <span class="muted">saved applicants</span></h2>
+      <div class="tablewrap"><table id="portfolio"></table></div>
+      <p class="muted">Aggregate expected subsidy is the sum of each saved applicant's last run.</p>
+    </div>
+    <p class="muted">Illustrative actuarial assumptions (Gompertz mortality, age-based care transitions, lognormal returns). Replace them with community experience before relying on results for admission decisions.</p>
+  </section>
+</main>
+
+<script src="engine.js"></script>
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const STORE = 'resident-underwriter.v1';
+const money = (v) => (v == null || Number.isNaN(v)) ? '—' : (v < 0 ? '-' : '') + '$' + Math.round(Math.abs(v)).toLocaleString();
+const kmoney = (v) => Math.abs(v) >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + Math.round(v / 1e3) + 'k';
+const pct = (v) => (v * 100).toFixed(1) + '%';
+
+function load() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
+function persist(db) { try { localStorage.setItem(STORE, JSON.stringify(db)); } catch {} }
+let db = load();
+db.applicants ||= {};
+if (!Object.keys(db.applicants).length) { const s = Engine.sampleApplicant(); db.applicants[s.id] = s; }
+let current = structuredClone(db.applicants[db.currentId] || Object.values(db.applicants)[0]);
+let lastResult = null;
+
+/* ---------- form ---------- */
+const get = (o, path) => path.split('.').reduce((a, k) => a?.[k], o);
+function set(o, path, v) { const ks = path.split('.'); const last = ks.pop(); ks.reduce((a, k) => (a[k] ??= {}), o)[last] = v; }
+
+function field(label, path, opts = {}) {
+  const v = get(current, path);
+  if (opts.options) {
+    return `<label>${label}<select data-path="${path}">${opts.options.map(([val, txt]) => `<option value="${val}" ${String(v) === String(val) ? 'selected' : ''}>${txt}</option>`).join('')}</select></label>`;
+  }
+  if (opts.check) return `<label class="check"><input type="checkbox" data-path="${path}" ${v ? 'checked' : ''}>${label}</label>`;
+  const type = opts.text ? 'text' : 'number';
+  return `<label>${label}<input type="${type}" data-path="${path}" value="${v ?? ''}" ${opts.step ? `step="${opts.step}"` : ''}></label>`;
+}
+
+function residentBlock(i) {
+  const p = `residents.${i}`;
+  return `<h3>${get(current, p + '.name') || 'Resident ' + (i + 1)}${i ? ' <button data-act="removeResident" style="font-size:11px;padding:1px 6px">remove</button>' : ''}</h3>
+  <div class="grid three">
+    ${field('Name', p + '.name', { text: true })}
+    ${field('Sex', p + '.sex', { options: [['F', 'Female'], ['M', 'Male']] })}
+    ${field('Age', p + '.age')}
+    ${field('Health', p + '.health', { options: [['excellent', 'Excellent'], ['good', 'Good'], ['fair', 'Fair'], ['poor', 'Poor']] })}
+    ${field('Annual income', p + '.income')}
+  </div>`;
+}
+
+function ltcBlock(i) {
+  const p = `ltcPolicies.${i}`;
+  return `<h3>${current.residents[i].name || 'Resident ' + (i + 1)}</h3>
+  ${field('Has LTC insurance', p + '.enabled', { check: true })}
+  <div class="grid three" style="margin-top:6px">
+    ${field('Daily benefit', p + '.dailyBenefit')}
+    ${field('Benefit years', p + '.benefitYears', { step: 0.5 })}
+    ${field('Elimination days', p + '.eliminationDays')}
+    ${field('Inflation rider %', p + '.inflationRider', { step: 0.5 })}
+    ${field('Annual premium', p + '.annualPremium')}
+  </div>`;
+}
+
+function lifeBlock(i) {
+  const p = `lifeInsurance.${i}`;
+  const pol = current.lifeInsurance[i];
+  const term = pol.type === 'term';
+  const insuredOpts = current.residents.map((r, k) => [k, r.name || 'Resident ' + (k + 1)]);
+  return `<div class="policy">
+    <div class="head">
+      <input type="checkbox" data-path="${p}.enabled" ${pol.enabled !== false ? 'checked' : ''} title="Include policy">
+      <input type="text" data-path="${p}.label" value="${pol.label || ''}" aria-label="Policy name">
+      <button data-act="removePolicy" data-i="${i}" style="font-size:11px;padding:1px 6px">remove</button>
+    </div>
+    <div class="grid three">
+      ${field('Insured', p + '.insured', { options: insuredOpts })}
+      ${field('Type', p + '.type', { options: [['whole', 'Whole life'], ['universal', 'Universal life'], ['term', 'Term']] })}
+      ${field('Death benefit (face)', p + '.faceAmount')}
+      ${term ? field('Term ends at age', p + '.termEndAge') : field('Cash surrender value', p + '.cashValue')}
+      ${term ? '' : field('Cash value growth %', p + '.cvGrowth', { step: 0.1 })}
+      ${field('Annual premium', p + '.annualPremium')}
+      ${field('Premium years left', p + '.premiumYears')}
+      ${field('Accel. benefit % (SN)', p + '.adbPct')}
+      ${term ? '' : field('Surrender charge %', p + '.surrenderChargePct')}
+    </div>
+    ${term ? '' : `<div style="margin-top:6px">${field('Surrender to pay fees before subsidy', p + '.surrenderWhenNeeded', { check: true })}</div>`}
+  </div>`;
+}
+
+function renderForm() {
+  current.ltcPolicies ||= [];
+  current.residents.forEach((_, i) => current.ltcPolicies[i] ||= { enabled: false, dailyBenefit: 200, benefitYears: 3, eliminationDays: 90, inflationRider: 3, annualPremium: 3500 });
+  current.lifeInsurance ||= [];
+  current.lifeOptions ||= { countInNetWorth: true, valueBasis: 'cash' };
+  const c = current.contract.type;
+  $('#inputs').innerHTML = `
+  <div class="panel"><h2>Applicant</h2>
+    ${field('Applicant / file name', 'name', { text: true })}
+    ${current.residents.map((_, i) => residentBlock(i)).join('')}
+    ${current.residents.length < 2 ? '<button data-act="addResident" style="margin-top:8px">+ Add spouse / partner</button>' : ''}
+  </div>
+  <div class="panel"><h2>Finances</h2><div class="grid">
+    ${field('Liquid assets', 'finances.liquidAssets')}
+    ${field('Other assets (home equity, etc.)', 'finances.otherAssets')}
+    ${field('Other annual expenses', 'finances.otherExpenses')}
+    ${current.residents.length > 1 ? field('Survivor income % of combined', 'finances.survivorIncomePct') : ''}
+  </div></div>
+  <div class="panel"><h2>Residence &amp; contract</h2><div class="grid">
+    ${field('Contract type', 'contract.type', { options: [['A', 'Type A – Life care'], ['B', 'Type B – Modified'], ['C', 'Type C – Fee for service']] })}
+    ${field('Entrance fee', 'fees.entranceFee')}
+    ${field('Refund % of entrance fee', 'contract.refundPct')}
+    ${current.residents.length > 1 ? field('2nd person entrance fee %', 'fees.secondPersonEntrancePct') : ''}
+    ${field('Monthly fee (IL)', 'fees.monthlyFee')}
+    ${current.residents.length > 1 ? field('2nd person monthly fee', 'fees.secondPersonFee') : ''}
+    ${field('AL market rate / mo', 'fees.alMonthly')}
+    ${field('SN market rate / mo', 'fees.snMonthly')}
+    ${c === 'B' ? field('Free care days', 'contract.freeCareDays') + field('Discount after free days %', 'contract.discountPct') : ''}
+  </div></div>
+  <div class="panel"><h2>Economics</h2><div class="grid three">
+    ${field('Return mean %', 'economics.returnMean', { step: 0.1 })}
+    ${field('Return st. dev. %', 'economics.returnStdev', { step: 0.1 })}
+    ${field('Fee inflation %', 'economics.feeInflation', { step: 0.1 })}
+    ${field('Income COLA %', 'economics.incomeCola', { step: 0.1 })}
+    ${field('Discount rate %', 'economics.discountRate', { step: 0.1 })}
+  </div></div>
+  <div class="panel"><h2>Long-term care insurance</h2>${current.residents.map((_, i) => ltcBlock(i)).join('')}</div>
+  <div class="panel"><h2>Life insurance <span class="new">NEW</span></h2>
+    <div class="grid">
+      ${field('Count policy value in net worth', 'lifeOptions.countInNetWorth', { check: true })}
+      ${field('Value basis', 'lifeOptions.valueBasis', { options: [['cash', 'Cash surrender value'], ['face', 'Death benefit (face)']] })}
+    </div>
+    ${current.lifeInsurance.map((_, i) => lifeBlock(i)).join('')}
+    <button data-act="addPolicy" style="margin-top:10px">+ Add life insurance policy</button>
+    <p class="muted">Cash value can be surrendered before the community subsidises fees. A death benefit paid while a spouse survives goes into the couple's assets; at the last death it goes to the estate. Accelerated benefits pay out in skilled nursing.</p>
+  </div>
+  <div class="panel"><h2>Decision thresholds</h2><div class="grid">
+    ${field('Approve if subsidy probability ≤', 'thresholds.approveProb', { step: 0.01 })}
+    ${field('Decline if subsidy probability ≥', 'thresholds.declineProb', { step: 0.01 })}
+  </div></div>`;
+}
+
+$('#inputs').addEventListener('change', (e) => {
+  const el = e.target, path = el.dataset.path;
+  if (!path) return;
+  let v = el.type === 'checkbox' ? el.checked : el.type === 'number' ? (el.value === '' ? 0 : Number(el.value)) : el.value;
+  if (path.endsWith('.insured')) v = Number(v);
+  set(current, path, v);
+  if (/contract\.type|\.type$|\.insured|residents\.\d+\.name/.test(path)) renderForm();
+  scheduleRun();
+});
+$('#inputs').addEventListener('click', (e) => {
+  const act = e.target.dataset.act;
+  if (!act) return;
+  if (act === 'addResident') current.residents.push({ name: 'Resident 2', sex: 'F', age: current.residents[0].age, health: 'good', income: 20000 });
+  if (act === 'removeResident') { current.residents.length = 1; current.ltcPolicies.length = 1; current.lifeInsurance.forEach((p) => p.insured = 0); }
+  if (act === 'addPolicy') current.lifeInsurance.push({ enabled: true, label: 'Policy ' + (current.lifeInsurance.length + 1), insured: 0, type: 'whole', faceAmount: 100000, cashValue: 40000, cvGrowth: 3, annualPremium: 0, premiumYears: 0, termEndAge: 85, surrenderWhenNeeded: true, surrenderChargePct: 0, adbPct: 0 });
+  if (act === 'removePolicy') current.lifeInsurance.splice(Number(e.target.dataset.i), 1);
+  renderForm(); scheduleRun();
+});
+
+/* ---------- results ---------- */
+let timer;
+function scheduleRun() { clearTimeout(timer); timer = setTimeout(runModel, 350); }
+
+function runModel() {
+  const t0 = performance.now();
+  const sims = Number($('#sims').value);
+  lastResult = Engine.analyze(current, { simulations: sims, seed: 20261010 });
+  $('#runInfo').textContent = `${sims.toLocaleString()} simulations · ${Math.round(performance.now() - t0)} ms`;
+  const r = lastResult.withLife, w = lastResult.withoutLife;
+  current.lastRun = { probSubsidy: r.probSubsidy, expectedPV: r.expectedPV, rating: r.rating, at: new Date().toISOString() };
+  $('#kpis').innerHTML = `
+    <div class="kpi"><div class="l">Recommendation</div><div class="rating ${r.rating}">${r.rating}</div></div>
+    <div class="kpi"><div class="l">Probability of needing subsidy</div><div class="v">${pct(r.probSubsidy)}</div></div>
+    <div class="kpi"><div class="l">Expected subsidy (present value)</div><div class="v">${money(r.expectedPV)}</div><div class="d muted">95th pct ${money(r.pvP95)}</div></div>
+    <div class="kpi"><div class="l">Median years until subsidy starts</div><div class="v">${r.medianYearsToSubsidy ?? '—'}</div><div class="d muted">for runs that need one</div></div>
+    <div class="kpi"><div class="l">Median years in community</div><div class="v">${r.medianYearsInCommunity}</div></div>
+    <div class="kpi"><div class="l">Expected estate (incl. refund)</div><div class="v">${money(r.expectedEstate)}</div></div>`;
+  const li0 = r.byYear[0]?.lifeValue ?? 0;
+  const face = current.lifeInsurance.filter((p) => p.enabled !== false).reduce((s, p) => s + (p.faceAmount || 0), 0);
+  const cv = current.lifeInsurance.filter((p) => p.enabled !== false && p.type !== 'term').reduce((s, p) => s + (p.cashValue || 0), 0);
+  $('#lifeKpis').innerHTML = w ? `
+    <div class="kpi"><div class="l">Total death benefit</div><div class="v">${money(face)}</div><div class="d muted">cash value ${money(cv)}</div></div>
+    <div class="kpi"><div class="l">Subsidy probability without → with</div><div class="v">${pct(w.probSubsidy)} → ${pct(r.probSubsidy)}</div><div class="d" style="color:var(--ok)">${(w.probSubsidy - r.probSubsidy >= 0 ? '−' : '+') + Math.abs((w.probSubsidy - r.probSubsidy) * 100).toFixed(1)} pts</div></div>
+    <div class="kpi"><div class="l">Expected subsidy PV reduced by</div><div class="v">${money(w.expectedPV - r.expectedPV)}</div></div>
+    <div class="kpi"><div class="l">Rating without life insurance</div><div class="rating ${w.rating}" style="font-size:20px">${w.rating}</div></div>
+    <div class="kpi"><div class="l">Estate change from policies</div><div class="v">${money(r.expectedEstate - w.expectedEstate)}</div></div>`
+    : `<p class="muted">No life insurance policies included. Add one in the Life insurance section to see its effect.</p>`;
+  drawNetWorth(r.byYear); drawSubsidy(r.byYear); drawCare(r.byYear); drawTable(r.byYear); drawPortfolio();
+}
+
+const W = 800, PADL = 64, PADR = 14, PADT = 12;
+function axes(svg, H, rows, yMax, fmt) {
+  const x = (i) => PADL + (i / Math.max(1, rows.length - 1)) * (W - PADL - PADR);
+  const y = (v) => PADT + (1 - v / yMax) * (H - PADT - 28);
+  let g = '';
+  for (let k = 0; k <= 4; k++) {
+    const v = yMax * k / 4;
+    g += `<line x1="${PADL}" x2="${W - PADR}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${PADL - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  const step = Math.max(1, Math.ceil(rows.length / 10));
+  rows.forEach((r, i) => { if (i % step === 0) g += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${r.age}</text>`; });
+  return { x, y, g };
+}
+function niceMax(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); return Math.ceil(v / p) * p; }
+
+function drawNetWorth(rows) {
+  const svg = $('#nwChart'), H = 280;
+  const yMax = niceMax(Math.max(...rows.map((r) => Math.max(r.nwP90, r.lifeValue))));
+  const { x, y, g } = axes(svg, H, rows, yMax, kmoney);
+  const band = rows.map((r, i) => `${x(i)},${y(Math.max(0, r.nwP90))}`).join(' ') + ' ' + rows.slice().reverse().map((r, j) => `${x(rows.length - 1 - j)},${y(Math.max(0, r.nwP10))}`).join(' ');
+  const line = (k, col, w = 2.5) => `<polyline fill="none" stroke="${col}" stroke-width="${w}" points="${rows.map((r, i) => `${x(i)},${y(Math.max(0, r[k]))}`).join(' ')}"/>`;
+  svg.innerHTML = g + `<polygon fill="var(--band)" opacity=".75" points="${band}"/>` + line('nwP50', 'var(--accent)') + line('lifeValue', 'var(--life)', 2);
+}
+
+function drawSubsidy(rows) {
+  const svg = $('#subChart'), H = 220;
+  const yMax = niceMax(Math.max(1, ...rows.map((r) => r.expectedSubsidy)));
+  const { x, y, g } = axes(svg, H, rows, yMax, kmoney);
+  const bw = Math.max(2, (W - PADL - PADR) / rows.length - 2);
+  const bars = rows.map((r, i) => `<rect x="${x(i) - bw / 2}" y="${y(r.expectedSubsidy)}" width="${bw}" height="${y(0) - y(r.expectedSubsidy)}" fill="var(--bad)" opacity=".8"/>`).join('');
+  svg.innerHTML = g + bars;
+}
+
+function drawCare(rows) {
+  const svg = $('#careChart'), H = 200;
+  const n = current.residents.length;
+  const { x, y, g } = axes(svg, H, rows, n, (v) => v.toFixed(n > 1 ? 1 : 2));
+  const layers = [['IL', 'var(--il)'], ['AL', 'var(--al)'], ['SN', 'var(--sn)']];
+  const base = rows.map(() => 0);
+  let out = '';
+  for (const [k, col] of layers) {
+    const top = rows.map((r, i) => base[i] + r[k]);
+    const pts = rows.map((r, i) => `${x(i)},${y(top[i])}`).join(' ') + ' ' + rows.map((r, i) => `${x(i)},${y(base[i])}`).reverse().join(' ');
+    out += `<polygon fill="${col}" opacity=".85" points="${pts}"/>`;
+    top.forEach((v, i) => base[i] = v);
+  }
+  svg.innerHTML = g + out;
+}
+
+function drawTable(rows) {
+  $('#yearTable').innerHTML = `<thead><tr><th>Age</th><th>Alive</th><th>IL</th><th>AL</th><th>SN</th><th>Net worth P10</th><th>Median</th><th>P90</th><th>Life ins. value</th><th>Exp. subsidy</th></tr></thead><tbody>` +
+    rows.map((r) => `<tr><td>${r.age}</td><td>${pct(r.aliveShare)}</td><td>${r.IL.toFixed(2)}</td><td>${r.AL.toFixed(2)}</td><td>${r.SN.toFixed(2)}</td><td>${money(r.nwP10)}</td><td>${money(r.nwP50)}</td><td>${money(r.nwP90)}</td><td>${money(r.lifeValue)}</td><td>${money(r.expectedSubsidy)}</td></tr>`).join('') + '</tbody>';
+}
+
+function drawPortfolio() {
+  const list = Object.values(db.applicants);
+  let total = 0;
+  $('#portfolio').innerHTML = `<thead><tr><th>Applicant</th><th>Rating</th><th>P(subsidy)</th><th>Expected subsidy PV</th><th></th></tr></thead><tbody>` +
+    list.map((a) => { const lr = a.lastRun; total += lr?.expectedPV || 0; return `<tr><td>${a.name}</td><td>${lr ? `<span class="rating ${lr.rating}" style="font-size:12px">${lr.rating}</span>` : '—'}</td><td>${lr ? pct(lr.probSubsidy) : '—'}</td><td>${lr ? money(lr.expectedPV) : '—'}</td><td><button data-open="${a.id}">open</button></td></tr>`; }).join('') +
+    `<tr><td><b>Total</b></td><td></td><td></td><td><b>${money(total)}</b></td><td></td></tr></tbody>`;
+}
+$('#portfolio').addEventListener('click', (e) => { const id = e.target.dataset.open; if (id) openApplicant(id); });
+
+/* ---------- applicants ---------- */
+function refreshSelect() {
+  $('#applicantSel').innerHTML = Object.values(db.applicants).map((a) => `<option value="${a.id}" ${a.id === current.id ? 'selected' : ''}>${a.name}</option>`).join('');
+}
+function openApplicant(id) { current = structuredClone(db.applicants[id]); db.currentId = id; persist(db); refreshSelect(); renderForm(); runModel(); }
+$('#applicantSel').onchange = (e) => openApplicant(e.target.value);
+$('#saveBtn').onclick = () => { db.applicants[current.id] = structuredClone(current); db.currentId = current.id; persist(db); refreshSelect(); drawPortfolio(); };
+$('#newBtn').onclick = () => {
+  const s = Engine.sampleApplicant();
+  s.id = 'a' + Date.now().toString(36); s.name = 'New applicant';
+  s.residents = [{ name: 'Resident 1', sex: 'F', age: 78, health: 'good', income: 30000 }];
+  s.ltcPolicies = [{ enabled: false, dailyBenefit: 200, benefitYears: 3, eliminationDays: 90, inflationRider: 3, annualPremium: 3500 }];
+  s.lifeInsurance = []; delete s.lastRun;
+  db.applicants[s.id] = s; openApplicant(s.id);
+};
+$('#delBtn').onclick = () => {
+  if (Object.keys(db.applicants).length < 2 || !confirm(`Delete ${current.name}?`)) return;
+  delete db.applicants[current.id]; openApplicant(Object.keys(db.applicants)[0]);
+};
+$('#sims').onchange = runModel;
+$('#runBtn').onclick = runModel;
+$('#printBtn').onclick = () => window.print();
+
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$('#exportBtn').onclick = () => download('applicants.json', JSON.stringify({ applicants: Object.values(db.applicants) }, null, 2), 'application/json');
+$('#importBtn').onclick = () => $('#importFile').click();
+$('#importFile').onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    const list = Array.isArray(data) ? data : data.applicants || [data];
+    for (const a of list) { a.id ||= 'a' + Math.random().toString(36).slice(2, 9); db.applicants[a.id] = a; }
+    persist(db); openApplicant(list[0].id);
+  } catch (err) { alert('Could not import: ' + err.message); }
+  e.target.value = '';
+};
+$('#csvBtn').onclick = () => {
+  if (!lastResult) return;
+  const rows = lastResult.withLife.byYear;
+  const head = 'age,alive_share,il,al,sn,net_worth_p10,net_worth_p50,net_worth_p90,life_insurance_value,expected_subsidy';
+  const body = rows.map((r) => [r.age, r.aliveShare, r.IL, r.AL, r.SN, r.nwP10, r.nwP50, r.nwP90, r.lifeValue, r.expectedSubsidy].map((v) => +(+v).toFixed(4)).join(','));
+  download(`${current.name.replace(/\W+/g, '_')}_projection.csv`, [head, ...body].join('\n'), 'text/csv');
+};
+
+refreshSelect(); renderForm(); runModel();
+</script>
+</body>
+</html>
