@@ -125,6 +125,19 @@ html,body{overflow-x:clip}
 .tools h3{margin:0}
 .tools p{margin:4px 0 0;color:var(--ink-2)}
 
+/* Project tile */
+.project{flex-direction:column;align-items:stretch;gap:18px}
+.project .head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.project .status{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 28px}
+@media (max-width:700px){.project .status{grid-template-columns:1fr}}
+.project .status li{display:flex;gap:10px;align-items:baseline;color:var(--ink-2);font-size:.95rem}
+.project .status li b{color:var(--ink);font-weight:600}
+.project .status .mk{flex:none;font-family:var(--mono);font-size:.72rem;font-weight:600;padding:1px 7px;border-radius:99px}
+.mk.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.mk.wip{background:color-mix(in srgb,var(--amber) 18%,transparent);color:var(--amber)}
+.mk.no{background:color-mix(in srgb,var(--crit) 14%,transparent);color:var(--crit)}
+.project .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:14px;border-top:1px dashed var(--line);font-family:var(--mono);font-size:.78rem;color:var(--ink-2)}
+
 /* SLA table */
 .sla-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 table.sla{width:100%;border-collapse:collapse;min-width:560px}
@@ -259,6 +272,29 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
     <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
     <div class="txt"><span class="eyebrow">Client tools</span><h3>Resident Underwriter</h3><p>Financial underwriting simulator for senior-living communities. Password required.</p></div>
     <a class="btn ghost" href="underwriter/">Open tool</a>
+  </div>
+
+  <div class="tools project" id="linux-laptop">
+    <div class="head">
+      <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="11" rx="1.5"/><path d="M2 19h20"/><path d="m9 8 2 2-2 2"/><path d="M13 12h2"/></svg></div>
+      <div class="txt"><span class="eyebrow">Projects</span><h3>Linux Laptop Project</h3><p>Getting Linux fully working on a 2016 15&Prime; MacBook Pro (A1707): T1 chip, Touch Bar, AMD graphics, Broadcom Wi-Fi.</p></div>
+      <a class="btn ghost" href="https://d2dnc.myshopify.com/collections/all" target="_blank" rel="noopener">Shop tech tees</a>
+    </div>
+    <ul class="status">
+      <li><span class="mk ok">done</span><span><b>Desktop:</b> Arch-based Omarchy with the Hyprland tiling window manager</span></li>
+      <li><span class="mk ok">done</span><span><b>Touch Bar:</b> revived through the T1 chip, with a custom layout for workspaces and media</span></li>
+      <li><span class="mk ok">done</span><span><b>Touch ID:</b> fingerprint unlock for the lock screen and sudo</span></li>
+      <li><span class="mk ok">done</span><span><b>Speakers:</b> working with a patched Cirrus Logic audio driver</span></li>
+      <li><span class="mk ok">done</span><span><b>5 GHz Wi-Fi:</b> enabled with model-specific Broadcom calibration data</span></li>
+      <li><span class="mk ok">done</span><span><b>FaceTime HD camera:</b> bridged to a standard 720p webcam for call apps</span></li>
+      <li><span class="mk ok">done</span><span><b>TV casting:</b> Chromecast and Roku over the home network (fix shared upstream)</span></li>
+      <li><span class="mk ok">done</span><span><b>New battery</b> plus a low-power &ldquo;deep idle&rdquo; mode when the lid is closed</span></li>
+      <li><span class="mk wip">partial</span><span><b>Sleep:</b> suspend works, but the Touch Bar stays dark until a reboot</span></li>
+      <li><span class="mk wip">partial</span><span><b>Battery life:</b> the discrete AMD GPU drives the display, so power draw stays high</span></li>
+      <li><span class="mk no">blocked</span><span><b>Hibernate:</b> the AMD GPU fails to come back from hibernation</span></li>
+      <li><span class="mk no">blocked</span><span><b>Wi-Fi Direct / Miracast:</b> not supported by the Broadcom Wi-Fi chip</span></li>
+    </ul>
+    <div class="foot"><span>Status as of October 2026</span><a href="https://d2dnc.myshopify.com/collections/all" target="_blank" rel="noopener">Tech tees &amp; merch &rarr;</a></div>
   </div>
 
 </section>
