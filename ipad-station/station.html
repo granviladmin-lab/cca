@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>iPad Station</title>
+<style>
+:root { --bg:#0B1118; --surface:#121B25; --surface-2:#18232F; --ink:#E8EEF4; --ink-2:#98A7B6; --line:#243241;
+  --accent:#6F8CFF; --ok:#3CC98A; --amber:#F2B03E; --crit:#FF6B5E; }
+* { box-sizing:border-box; }
+html, body { margin:0; height:100%; background:var(--bg); color:var(--ink);
+  font-family:-apple-system, system-ui, "Segoe UI", sans-serif; -webkit-user-select:none; user-select:none; }
+body { padding:20px 24px; overflow:hidden; }
+#dim { position:fixed; top:0; left:0; right:0; bottom:0; background:#000; opacity:0; pointer-events:none; transition:opacity 2s; }
+
+/* Setup */
+#setup { max-width:440px; margin:6vh auto 0; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:28px; }
+#setup h1 { margin:0 0 6px; font-size:22px; }
+#setup p { color:var(--ink-2); margin:0 0 18px; font-size:14px; line-height:1.45; }
+#setup label { display:block; font-size:13px; color:var(--ink-2); margin:14px 0 6px; }
+#setup input, #setup select { width:100%; font:inherit; font-size:16px; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+#setup button { width:100%; margin-top:22px; font:inherit; font-size:17px; padding:12px; border:0; border-radius:9px; background:var(--accent); color:var(--bg); font-weight:600; }
+#setupErr { color:var(--crit); min-height:1.3em; margin-top:12px; font-size:14px; }
+
+/* Kiosk */
+#kiosk { display:none; height:100%; grid-template-rows:auto auto auto 1fr auto; grid-row-gap:14px; }
+.top { grid-row:1; } #alert { grid-row:2; } .now { grid-row:3; } .lower { grid-row:4; } .bar { grid-row:5; }
+.top { display:grid; grid-template-columns:1fr auto; align-items:end; }
+#clock { font-size:80px; font-weight:200; letter-spacing:-2px; line-height:1; font-variant-numeric:tabular-nums; }
+#date { font-size:22px; color:var(--ink-2); margin-top:4px; }
+#place { font-size:18px; color:var(--ink-2); text-align:right; }
+#alert { display:none; background:rgba(255,107,94,.14); border:1px solid var(--crit); color:var(--crit); border-radius:12px; padding:12px 16px; font-size:18px; }
+.now { display:grid; grid-template-columns:auto 1fr; grid-column-gap:28px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px 22px; }
+#nowIcon { font-size:76px; line-height:1; }
+#nowTemp { font-size:76px; font-weight:200; line-height:1; }
+#nowCond { font-size:24px; margin-top:2px; }
+#nowMeta { font-size:16px; color:var(--ink-2); margin-top:6px; line-height:1.45; }
+.panel { background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px 20px; overflow:hidden; }
+.panel h2 { margin:0 0 8px; font-size:14px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-2); font-weight:600; }
+#hourly { display:grid; grid-template-columns:repeat(12, 1fr); text-align:center; }
+#hourly div { font-size:14px; color:var(--ink-2); }
+#hourly b { display:block; font-size:20px; color:var(--ink); font-weight:500; margin:2px 0; }
+#hourly span { display:block; font-size:24px; }
+.lower { display:grid; grid-template-rows:auto 1fr; grid-row-gap:16px; min-height:0; }
+#daily .d { display:grid; grid-template-columns:110px 44px 1fr 90px; align-items:center; padding:4px 0; border-top:1px solid var(--line); font-size:18px; }
+#daily .d:first-child { border-top:0; }
+#daily .lo { color:var(--ink-2); }
+#daily .pp { color:var(--accent); font-size:16px; text-align:right; }
+.bar { display:grid; grid-template-columns:auto 1fr auto; grid-column-gap:14px; align-items:center; font-size:15px; color:var(--ink-2); background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; }
+#camDot { width:12px; height:12px; border-radius:50%; background:var(--ink-2); }
+#camDot.on { background:var(--ok); }
+#camDot.motion { background:var(--crit); }
+#camDot.err { background:var(--amber); }
+#preview { width:96px; height:72px; object-fit:cover; border-radius:8px; background:#000; }
+#preview.hide { visibility:hidden; }
+@media (orientation: landscape) {
+  #kiosk { grid-template-columns:1fr 1fr; grid-column-gap:24px; grid-template-rows:auto auto 1fr auto; }
+  /* Left: now + hourly. Right: the 7-day list, full height. */
+  #kiosk { grid-template-rows:auto auto auto 1fr auto; }
+  .top, #alert, .bar { grid-column:1 / span 2; }
+  .lower { display:contents; }
+  .now { grid-column:1; grid-row:3; }
+  #hourlyPanel { grid-column:1; grid-row:4; }
+  #dailyPanel { grid-column:2; grid-row:3 / span 2; }
+  .bar { grid-row:5; }
+  #hourly { grid-template-columns:repeat(6, 1fr); }
+  #hourly div:nth-child(n+7) { display:none; }
+  #daily .d { padding:7px 0; }
+}
+</style>
+</head>
+<body>
+
+<form id="setup" autocomplete="off">
+  <h1>iPad Weather / Security Station</h1>
+  <p>One-time setup. Values stay on this iPad. Snapshots are encrypted with the station password before upload.</p>
+  <label for="token">GitHub upload token (ipad-station-feed only)</label>
+  <input id="token" type="password" placeholder="github_pat_…" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+  <label for="pw">Station password</label>
+  <input id="pw" type="password" required>
+  <label for="sens">Motion sensitivity</label>
+  <select id="sens">
+    <option value="0.04">Low (big movement only)</option>
+    <option value="0.02" selected>Medium</option>
+    <option value="0.008">High (small movement)</option>
+  </select>
+  <button id="start">Start station</button>
+  <div id="setupErr" role="alert"></div>
+</form>
+
+<main id="kiosk">
+  <div class="top">
+    <div><div id="clock">--:--</div><div id="date"></div></div>
+    <div id="place"></div>
+  </div>
+  <div id="alert"></div>
+  <section class="now">
+    <div id="nowIcon">🌡️</div>
+    <div>
+      <div id="nowTemp">--°</div>
+      <div id="nowCond">Loading weather…</div>
+      <div id="nowMeta"></div>
+    </div>
+  </section>
+  <div class="lower">
+    <section class="panel" id="hourlyPanel"><h2>Coming hours</h2><div id="hourly"></div></section>
+    <section class="panel" id="dailyPanel"><h2>7 days</h2><div id="daily"></div></section>
+  </div>
+  <div class="bar">
+    <div id="camDot"></div>
+    <div id="camText">Camera starting…</div>
+    <video id="preview" playsinline muted autoplay></video>
+  </div>
+</main>
+<div id="dim"></div>
+
+<script src="common.js"></script>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var KEY = null, TOKEN = '', SENS = 0.02;
+var index = { events: [], latest: null, station: {} };
+var state = { uploads: 0, lastMotion: 0, lastUpload: 0, lastError: '', busy: false, queue: [] };
+
+// ---------- GitHub (Git Data API; every upload is a fresh orphan commit so the repo stays small)
+var API = 'https://api.github.com/repos/' + STATION.owner + '/' + STATION.repo;
+function gh(method, path, body) {
+  return fetch(API + path, {
+    method: method,
+    headers: { Authorization: 'token ' + TOKEN, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  }).then(function (r) {
+    if (!r.ok) return r.text().then(function (t) { throw new Error('GitHub ' + r.status + ': ' + t.slice(0, 120)); });
+    return r.status === 204 ? null : r.json();
+  });
+}
+
+function headTree() {
+  return gh('GET', '/git/ref/heads/' + STATION.branch).then(function (ref) {
+    return gh('GET', '/git/commits/' + ref.object.sha);
+  }).then(function (c) { return c.tree.sha; });
+}
+
+// files: [{path, bytes}], deletes: [path]
+function commitFiles(files, deletes, message) {
+  var baseTree;
+  return headTree().then(function (t) {
+    baseTree = t;
+    return Promise.all(files.map(function (f) {
+      return gh('POST', '/git/blobs', { content: bytesToB64(f.bytes), encoding: 'base64' })
+        .then(function (b) { return { path: f.path, mode: '100644', type: 'blob', sha: b.sha }; });
+    }));
+  }).then(function (entries) {
+    deletes.forEach(function (p) { entries.push({ path: p, mode: '100644', type: 'blob', sha: null }); });
+    return gh('POST', '/git/trees', { base_tree: baseTree, tree: entries });
+  }).then(function (tree) {
+    return gh('POST', '/git/commits', { message: message, tree: tree.sha, parents: [] });
+  }).then(function (commit) {
+    return gh('PATCH', '/git/refs/heads/' + STATION.branch, { sha: commit.sha, force: true });
+  });
+}
+
+function loadIndex() {
+  // Read through the git blob API: the contents API mangles binary files into UTF-8 text.
+  return gh('GET', '/git/ref/heads/' + STATION.branch).then(function (ref) {
+    return gh('GET', '/git/commits/' + ref.object.sha);
+  }).then(function (c) {
+    return gh('GET', '/git/trees/' + c.tree.sha);
+  }).then(function (t) {
+    var e = t.tree.filter(function (x) { return x.path === 'index.enc'; })[0];
+    return e ? gh('GET', '/git/blobs/' + e.sha) : null;
+  }).then(function (blob) {
+    if (!blob) return;
+    return decryptJSON(KEY, b64ToBytes(blob.content.replace(/\s/g, ''))).then(function (ix) { index = ix; index.events = index.events || []; });
+  });
+}
+
+// ---------- Upload queue (one commit at a time)
+function enqueue(job) { state.queue.push(job); pump(); }
+function pump() {
+  if (state.busy || !state.queue.length) return;
+  state.busy = true;
+  var job = state.queue.shift();
+  job().then(function () {
+    state.uploads++; state.lastUpload = Date.now(); state.lastError = '';
+  }).catch(function (e) {
+    state.lastError = e.message || String(e);
+  }).then(function () { state.busy = false; renderCam(); pump(); });
+}
+
+function snapshot() {
+  var v = $('preview'), w = v.videoWidth || 1280, h = v.videoHeight || 720;
+  var scale = Math.min(1, 1280 / Math.max(w, h));
+  var c = document.createElement('canvas');
+  c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  return b64ToBytes(c.toDataURL('image/jpeg', 0.72).split(',')[1]);
+}
+
+function uploadFrame(kind, score) {
+  var jpeg = snapshot(), t = Date.now();
+  enqueue(function () {
+    var files = [], deletes = [], id = randomId();
+    return encryptBytes(KEY, jpeg).then(function (enc) {
+      if (kind === 'motion') {
+        files.push({ path: 'e/' + id + '.enc', bytes: enc });
+        index.events.unshift({ id: id, t: t, score: Math.round(score * 1000) / 10 });
+        while (index.events.length > STATION.keepEvents) deletes.push('e/' + index.events.pop().id + '.enc');
+      }
+      files.push({ path: 'latest.enc', bytes: enc });
+      index.latest = { t: t, kind: kind };
+      index.station = { updated: t, ua: navigator.userAgent.slice(0, 80), sensitivity: SENS };
+      return encryptJSON(KEY, index);
+    }).then(function (encIndex) {
+      files.push({ path: 'index.enc', bytes: encIndex });
+      return commitFiles(files, deletes, kind === 'motion' ? 'motion' : 'heartbeat');
+    });
+  });
+}
+
+// ---------- Camera + motion detection
+var small = document.createElement('canvas'); small.width = 64; small.height = 48;
+var sctx = small.getContext('2d');
+var prev = null, hits = 0, warmUntil = 0;
+var MOTION_COOLDOWN = 60000, HEARTBEAT = 5 * 60000;
+
+function startCamera() {
+  var tries = [
+    { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+    { video: { facingMode: 'environment' }, audio: false }
+  ];
+  function attempt(i) {
+    return navigator.mediaDevices.getUserMedia(tries[i]).catch(function (e) {
+      if (i + 1 < tries.length) return attempt(i + 1);
+      throw e;
+    });
+  }
+  return attempt(0).then(function (stream) {
+    var v = $('preview');
+    v.srcObject = stream;
+    return v.play();
+  }).then(function () {
+    warmUntil = Date.now() + 4000;
+    setInterval(checkMotion, 500);
+    setInterval(function () { if (Date.now() - state.lastUpload > HEARTBEAT - 1000) uploadFrame('heartbeat', 0); }, 30000);
+    uploadFrame('heartbeat', 0);
+  });
+}
+
+function checkMotion() {
+  var v = $('preview');
+  if (!v.videoWidth) return;
+  sctx.drawImage(v, 0, 0, 64, 48);
+  var d = sctx.getImageData(0, 0, 64, 48).data, n = 64 * 48, gray = new Uint8Array(n);
+  for (var i = 0; i < n; i++) gray[i] = (d[i * 4] * 3 + d[i * 4 + 1] * 6 + d[i * 4 + 2]) / 10;
+  if (prev && Date.now() > warmUntil) {
+    var changed = 0;
+    for (var j = 0; j < n; j++) if (Math.abs(gray[j] - prev[j]) > 28) changed++;
+    var ratio = changed / n;
+    // Over 60% of the frame changing at once is a light switch or auto-exposure, not motion.
+    hits = ratio > SENS && ratio < 0.6 ? hits + 1 : 0;
+    if (hits >= 2) {
+      hits = 0;
+      $('camDot').className = 'motion';
+      setTimeout(renderCam, 1500);
+      if (Date.now() - state.lastMotion > MOTION_COOLDOWN) {
+        state.lastMotion = Date.now();
+        uploadFrame('motion', ratio);
+      }
+    }
+  }
+  prev = gray;
+}
+
+function renderCam() {
+  var dot = $('camDot'), parts = [];
+  if (state.lastError) { dot.className = 'err'; parts.push('Upload error: ' + state.lastError); }
+  else { dot.className = 'on'; parts.push('Watching (back camera)'); }
+  parts.push(index.events.length + (index.events.length === 1 ? ' motion event saved' : ' motion events saved'));
+  if (state.lastMotion) parts.push('last motion ' + fmtTime(state.lastMotion));
+  if (state.lastUpload) parts.push('uploaded ' + fmtTime(state.lastUpload));
+  $('camText').textContent = parts.join(' · ');
+}
+
+// ---------- Weather display
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+function tick() {
+  var now = new Date();
+  var parts = now.toLocaleTimeString('en-US', { timeZone: STATION.tz, hour: 'numeric', minute: '2-digit' });
+  $('clock').textContent = parts.replace(/\s?[AP]M/, '');
+  $('date').textContent = now.toLocaleDateString('en-US', { timeZone: STATION.tz, weekday: 'long', month: 'long', day: 'numeric' }) +
+    ' · ' + (/PM/.test(parts) ? 'PM' : 'AM');
+}
+
+var sun = { rise: 0, set: 0 };
+function updateDim() {
+  // Darken the screen between an hour after sunset and sunrise.
+  var now = Date.now(), night = sun.rise && (now > sun.set + 3600000 || now < sun.rise);
+  $('dim').style.opacity = night ? 0.55 : 0;
+}
+
+function renderWeather(w) {
+  var c = w.current, cw = wmo(c.weather_code);
+  // Clear or partly cloudy at night: show the moon instead of the sun.
+  $('nowIcon').textContent = !c.is_day && c.weather_code <= 2 ? '🌙' : cw[1];
+  $('nowTemp').textContent = Math.round(c.temperature_2m) + '°';
+  $('nowCond').textContent = cw[0];
+  $('nowMeta').innerHTML = 'Feels like ' + Math.round(c.apparent_temperature) + '° · Humidity ' + c.relative_humidity_2m + '%<br>' +
+    'Wind ' + Math.round(c.wind_speed_10m) + ' mph, gusts ' + Math.round(c.wind_gusts_10m) + ' mph<br>' +
+    'High ' + Math.round(w.daily.temperature_2m_max[0]) + '° · Low ' + Math.round(w.daily.temperature_2m_min[0]) + '°';
+
+  var h = w.hourly, start = 0, nowIso = c.time.slice(0, 13);
+  for (var i = 0; i < h.time.length; i++) if (h.time[i].slice(0, 13) === nowIso) { start = i; break; }
+  var html = '';
+  for (var k = start + 1; k <= start + 12 && k < h.time.length; k++) {
+    var hr = parseInt(h.time[k].slice(11, 13), 10), lbl = (hr % 12 || 12) + (hr < 12 ? 'a' : 'p');
+    html += '<div>' + lbl + '<span>' + wmo(h.weather_code[k])[1] + '</span><b>' + Math.round(h.temperature_2m[k]) + '°</b>' +
+      (h.precipitation_probability[k] >= 20 ? h.precipitation_probability[k] + '%' : '&nbsp;') + '</div>';
+  }
+  $('hourly').innerHTML = html;
+
+  var dd = w.daily, rows = '';
+  for (var j = 0; j < dd.time.length; j++) {
+    var day = j === 0 ? 'Today' : new Date(dd.time[j] + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+    rows += '<div class="d"><span>' + day + '</span><span>' + wmo(dd.weather_code[j])[1] + '</span>' +
+      '<span>' + Math.round(dd.temperature_2m_max[j]) + '° <span class="lo">/ ' + Math.round(dd.temperature_2m_min[j]) + '°</span></span>' +
+      '<span class="pp">' + (dd.precipitation_probability_max[j] >= 20 ? '💧' + dd.precipitation_probability_max[j] + '%' : '') + '</span></div>';
+  }
+  $('daily').innerHTML = rows;
+  sun.rise = new Date(dd.sunrise[0]).getTime();
+  sun.set = new Date(dd.sunset[0]).getTime();
+  updateDim();
+}
+
+function refreshWeather() {
+  fetchWeather().then(renderWeather).catch(function () { $('nowCond').textContent = 'Weather unavailable, retrying…'; });
+  fetchAlerts().then(function (alerts) {
+    var a = $('alert');
+    if (alerts.length) { a.style.display = 'block'; a.textContent = '⚠️ ' + alerts.map(function (x) { return x.event; }).join(' · '); }
+    else a.style.display = 'none';
+  });
+}
+
+// ---------- Startup
+function startKiosk() {
+  $('setup').style.display = 'none';
+  $('kiosk').style.display = 'grid';
+  $('place').textContent = STATION.place;
+  tick(); setInterval(tick, 1000);
+  refreshWeather(); setInterval(refreshWeather, 10 * 60000);
+  setInterval(updateDim, 60000);
+  // Tap the preview to hide or show it.
+  $('preview').addEventListener('click', function () { this.classList.toggle('hide'); });
+  loadIndex().catch(function (e) { state.lastError = e.message; }).then(function () {
+    renderCam();
+    return startCamera();
+  }).catch(function (e) {
+    $('camDot').className = 'err';
+    $('camText').textContent = 'Camera unavailable: ' + (e.message || e.name) + ' (Safari needs camera permission)';
+  });
+}
+
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem('ipadStation') || 'null'); } catch (e) { return null; }
+}
+
+$('setup').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var btn = $('start'), err = $('setupErr');
+  btn.disabled = true; btn.textContent = 'Checking…'; err.textContent = '';
+  TOKEN = $('token').value.trim();
+  SENS = parseFloat($('sens').value);
+  var pw = $('pw').value;
+  deriveKey(pw).then(function (k) {
+    KEY = k;
+    return gh('GET', '');
+  }).then(function (repo) {
+    if (!repo.permissions || !repo.permissions.push) throw new Error('token cannot write to ' + STATION.repo);
+    return loadIndex();
+  }).then(function () {
+    try { localStorage.setItem('ipadStation', JSON.stringify({ token: TOKEN, pw: pw, sens: SENS })); } catch (x) {}
+    startKiosk();
+  }).catch(function (x) {
+    err.textContent = /OperationError|decrypt/i.test(String(x)) ? 'Wrong station password.' : (x.message || String(x));
+    btn.disabled = false; btn.textContent = 'Start station';
+  });
+});
+
+var saved = getSaved();
+if (saved) {
+  $('token').value = saved.token; $('pw').value = saved.pw; $('sens').value = String(saved.sens);
+  $('start').textContent = 'Start station (saved settings)';
+}
+</script>
+</body>
+</html>
