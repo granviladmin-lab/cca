@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Frog PDF">
+<meta name="theme-color" content="#173d27">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/frog.svg" type="image/svg+xml">
+<link rel="alternate icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Frog PDF</title>
+</head>
+<body>
+
+<!-- Lock -->
+<section id="lock" class="screen">
+  <form class="lock-card" id="lockForm" autocomplete="off">
+    <img src="icons/frog.svg" alt="" class="lock-logo">
+    <h1>Frog PDF</h1>
+    <input type="password" id="lockPw" placeholder="Password" autocomplete="current-password">
+    <label class="lock-remember"><input type="checkbox" id="lockRemember" checked> Remember on this iPad</label>
+    <button class="btn primary" type="submit" id="lockBtn">Unlock</button>
+    <p class="lock-msg" id="lockMsg"></p>
+  </form>
+</section>
+
+<!-- Library -->
+<section id="library" class="screen hidden">
+  <header class="bar">
+    <div class="brand"><img class="logo" src="icons/frog.svg" alt="">Frog PDF</div>
+    <label class="btn primary" for="openInput">Open PDF</label>
+  </header>
+  <div class="lib-body">
+    <p class="hint" id="libHint">Open a PDF from Files to view, mark up, sign, rearrange and export it. Everything stays on this iPad.</p>
+    <div id="docList" class="doc-list"></div>
+  </div>
+  <input type="file" id="openInput" accept="application/pdf,.pdf" hidden>
+</section>
+
+<!-- Editor -->
+<section id="editor" class="screen hidden">
+  <header class="bar top">
+    <button class="btn ghost" id="backBtn" title="Library">&#8249; Library</button>
+    <div class="title" id="docTitle"></div>
+    <div class="right">
+      <button class="btn ghost icon" id="undoBtn" title="Undo">&#8630;</button>
+      <button class="btn ghost icon" id="redoBtn" title="Redo">&#8631;</button>
+      <button class="btn ghost icon" id="searchBtn" title="Search">&#9906;</button>
+      <button class="btn ghost" id="pagesBtn" title="Pages">Pages</button>
+      <button class="btn primary" id="exportBtn">Export</button>
+    </div>
+  </header>
+
+  <div class="searchbar hidden" id="searchBar">
+    <input type="search" id="searchInput" placeholder="Find in document" autocomplete="off" autocorrect="off" autocapitalize="off">
+    <button class="btn ghost" id="searchNext">Next</button>
+    <span class="search-status" id="searchStatus"></span>
+    <button class="btn ghost" id="searchClose">Done</button>
+  </div>
+
+  <div id="viewer"><div id="pagesWrap"></div></div>
+
+  <aside id="sidePanel" class="hidden">
+    <div class="side-head">
+      <strong>Pages</strong>
+      <button class="btn ghost small" id="sideClose">Close</button>
+    </div>
+    <div class="side-actions">
+      <button class="btn small" data-op="rotl" title="Rotate left">&#10226; Left</button>
+      <button class="btn small" data-op="rotr" title="Rotate right">&#10227; Right</button>
+      <button class="btn small" data-op="up">&#9650; Up</button>
+      <button class="btn small" data-op="down">&#9660; Down</button>
+      <button class="btn small" data-op="blank">+ Blank</button>
+      <button class="btn small" data-op="dup">Duplicate</button>
+      <button class="btn small danger" data-op="del">Delete</button>
+      <label class="btn small" for="mergeInput">+ Add PDF</label>
+      <input type="file" id="mergeInput" accept="application/pdf,.pdf" hidden>
+    </div>
+    <div id="thumbs"></div>
+  </aside>
+
+  <div class="selbar hidden" id="selBar">
+    <button class="btn small" id="selEdit">Edit text</button>
+    <button class="btn small" id="selSmaller">A&minus;</button>
+    <button class="btn small" id="selBigger">A+</button>
+    <button class="btn small danger" id="selDelete">Delete</button>
+  </div>
+
+  <footer class="bar tools" id="toolBar">
+    <div class="tool-group" id="toolButtons">
+      <button class="tool active" data-tool="hand" title="Scroll">&#9995;<span>Scroll</span></button>
+      <button class="tool" data-tool="select" title="Select / move">&#10146;<span>Select</span></button>
+      <button class="tool" data-tool="pen" title="Pen">&#9998;<span>Pen</span></button>
+      <button class="tool" data-tool="highlight" title="Highlighter">&#9646;<span>Highlight</span></button>
+      <button class="tool" data-tool="text" title="Text">T<span>Text</span></button>
+      <button class="tool" data-tool="rect" title="Box">&#9633;<span>Box</span></button>
+      <button class="tool" data-tool="whiteout" title="White-out">&#9608;<span>White-out</span></button>
+      <button class="tool" data-tool="sign" title="Signature">&#10002;<span>Sign</span></button>
+      <button class="tool" data-tool="image" title="Image">&#9635;<span>Image</span></button>
+      <button class="tool" data-tool="eraser" title="Eraser">&#9003;<span>Erase</span></button>
+    </div>
+    <div class="tool-group opts">
+      <div id="swatches"></div>
+      <div id="widths"></div>
+      <div class="zoom">
+        <button class="btn ghost icon" id="zoomOut">&minus;</button>
+        <button class="btn ghost" id="zoomLabel">Fit</button>
+        <button class="btn ghost icon" id="zoomIn">+</button>
+      </div>
+      <button class="btn ghost" id="pageLabel">1 / 1</button>
+    </div>
+  </footer>
+  <input type="file" id="imageInput" accept="image/*" hidden>
+</section>
+
+<!-- Modals -->
+<div class="modal hidden" id="textModal">
+  <div class="card">
+    <h3 id="textModalTitle">Add text</h3>
+    <textarea id="textValue" rows="4" placeholder="Type here"></textarea>
+    <div class="row">
+      <label>Size <select id="textSize"><option>8</option><option>10</option><option selected>12</option><option>14</option><option>18</option><option>24</option><option>32</option><option>48</option></select></label>
+      <span class="spacer"></span>
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="textOk">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="signModal">
+  <div class="card wide">
+    <h3>Signatures</h3>
+    <div id="sigList" class="sig-list"></div>
+    <p class="hint small">Draw a new signature below, or tap a saved one to use it.</p>
+    <canvas id="sigPad"></canvas>
+    <div class="row">
+      <button class="btn ghost" id="sigClear">Clear</button>
+      <span class="spacer"></span>
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="sigSave">Save &amp; use</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="exportModal">
+  <div class="card">
+    <h3>Export</h3>
+    <p class="hint" id="exportMsg">Building PDF&hellip;</p>
+    <div class="row col" id="exportActions"></div>
+    <div class="row"><span class="spacer"></span><button class="btn ghost" data-close>Close</button></div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
