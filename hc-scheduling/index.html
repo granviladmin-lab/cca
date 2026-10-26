@@ -1,0 +1,1439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>The Pines HC Scheduling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#F3F5F7; --surface:#FFFFFF; --surface-2:#E8ECF1; --ink:#0E1822; --ink-2:#4A5866; --line:#D5DCE3;
+  --accent:#1F6F5C; --accent-ink:#FFFFFF; --accent-soft:#D7EEE7; --amber:#B9730A; --ok:#16935B; --crit:#C9392F; --crit-soft:#FBE3E1; --ok-soft:#DDF3E8;
+  --weekend:#EEF1F5; --today:#FFF6D9;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1118; --surface:#121B25; --surface-2:#18232F; --ink:#E8EEF4; --ink-2:#98A7B6; --line:#243241;
+    --accent:#4FC3A1; --accent-ink:#0B1118; --accent-soft:#163A31; --amber:#F2B03E; --ok:#3CC98A; --crit:#FF6B5E; --crit-soft:#3A1A18; --ok-soft:#123326;
+    --weekend:#151F2A; --today:#2E2A14;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1118; --surface:#121B25; --surface-2:#18232F; --ink:#E8EEF4; --ink-2:#98A7B6; --line:#243241;
+  --accent:#4FC3A1; --accent-ink:#0B1118; --accent-soft:#163A31; --amber:#F2B03E; --ok:#3CC98A; --crit:#FF6B5E; --crit-soft:#3A1A18; --ok-soft:#123326;
+  --weekend:#151F2A; --today:#2E2A14;
+}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.01em;line-height:1.15}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--crit)}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.muted{color:var(--ink-2)}
+.hidden{display:none !important}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+
+/* Lock screen */
+#lock{min-height:100vh;display:grid;place-items:center;padding:16px}
+#lock form{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px;width:min(400px,100%);display:grid;gap:14px}
+#lock .mark{width:52px;height:52px;border-radius:14px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+#lock .err{color:var(--crit);min-height:1.2em;margin:0}
+
+/* App shell */
+header.top{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:19px;display:flex;align-items:center;gap:10px}
+header.top h1 .mark{width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap}
+nav.tabs button{border:0;background:none;padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--ink-2);font-weight:500}
+nav.tabs button.on{background:var(--accent-soft);color:var(--ink)}
+.sync{font-size:13px;display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.sync .dot{width:9px;height:9px;border-radius:50%;background:var(--ink-2)}
+.sync.ok .dot{background:var(--ok)}
+.sync.busy .dot{background:var(--amber)}
+.sync.bad .dot{background:var(--crit)}
+main{padding:16px;max-width:100%}
+.view{display:grid;gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card h2{font-size:17px;margin-bottom:10px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toolbar h2{font-size:18px;margin-right:6px}
+.banner{border-radius:var(--r);padding:10px 14px;background:var(--accent-soft)}
+.banner.warn{background:var(--crit-soft)}
+
+/* Schedule grid */
+.gridwrap{overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);max-height:calc(100vh - 190px)}
+table.grid{border-collapse:separate;border-spacing:0;font-size:13px;min-width:100%}
+table.grid th,table.grid td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0;text-align:center;white-space:nowrap}
+table.grid thead th{position:sticky;top:0;background:var(--surface);z-index:3;padding:6px 4px;font-weight:600}
+table.grid thead th .dow{display:block;font-size:11px;color:var(--ink-2);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+table.grid .name{position:sticky;left:0;background:var(--surface);z-index:2;text-align:left;padding:4px 10px;min-width:190px;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+table.grid thead .name{z-index:4}
+table.grid .name small{color:var(--ink-2);margin-left:6px}
+table.grid .tot{padding:4px 8px;font-family:var(--mono);font-size:12px;width:84px;min-width:84px}
+table.grid .tot.ot{color:var(--crit);font-weight:700}
+table.grid tr.group td{background:var(--surface-2);text-align:left;padding:5px 10px;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;position:sticky;left:0}
+table.grid td.c{min-width:46px;height:34px;cursor:pointer;position:relative;font-family:var(--mono);font-weight:700;font-size:12px}
+table.grid td.c.ro{cursor:default}
+table.grid .we{background:var(--weekend)}
+table.grid .td{background:var(--today)}
+table.grid td.c:focus{outline:2px solid var(--accent);outline-offset:-2px;z-index:1}
+td.c .chip{display:inline-block;min-width:34px;padding:3px 4px;border-radius:6px;color:#fff}
+td.c .chip.off{background:none;color:var(--ink-2);font-weight:500}
+td.c .chip.pto{background:#7A8794}
+td.c .chip.co{background:none;color:var(--crit);border:1.5px dashed var(--crit)}
+td.c .req{position:absolute;top:2px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--amber)}
+td.c .warn{position:absolute;bottom:1px;right:2px;font-size:10px;color:var(--crit);font-family:var(--body)}
+td.c .float{position:absolute;bottom:1px;left:3px;font-size:9px;color:var(--ink-2);font-family:var(--body)}
+td.c .note{position:absolute;top:1px;left:3px;font-size:9px;color:var(--ink-2)}
+table.grid tfoot td{background:var(--surface);font-family:var(--mono);font-size:12px;padding:4px 2px}
+table.grid tfoot td.name{font-family:var(--body);font-size:12px}
+table.grid tfoot tr:first-child td{border-top:2px solid var(--ink-2)}
+td.cov.short{background:var(--crit-soft);color:var(--crit);font-weight:700}
+td.cov.met{color:var(--ok)}
+td.cov.over{color:var(--amber)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px}
+
+/* Popover */
+#pop{position:fixed;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:12px;width:290px;display:grid;gap:10px}
+#pop .shifts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#pop .shifts button{border:0;border-radius:8px;padding:8px 4px;color:#fff;cursor:pointer;font-weight:600;font-size:13px;line-height:1.2}
+#pop .shifts button small{display:block;font-weight:400;font-size:11px;opacity:.9}
+#pop .shifts button.alt{background:var(--surface-2);color:var(--ink)}
+#pop .shifts button.sel{outline:3px solid var(--ink);outline-offset:1px}
+#pop .warns{font-size:12px;color:var(--crit)}
+
+/* Tables */
+table.list{width:100%;border-collapse:collapse;font-size:14px}
+table.list th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2);font-weight:600;padding:8px;border-bottom:1px solid var(--line)}
+table.list td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.list tr.inactive td{opacity:.5}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;background:var(--surface-2)}
+.pill.pending{background:#FFF0CC;color:#7A4E00}
+.pill.approved{background:var(--ok-soft);color:var(--ok)}
+.pill.denied{background:var(--crit-soft);color:var(--crit)}
+.swatch{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+
+/* Day sheet */
+.daygrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.daygrid .card h3{font-size:16px;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px}
+.daygrid ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.daygrid li{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.daygrid li:last-child{border-bottom:0}
+.need{color:var(--crit);font-weight:600}
+
+/* Open shifts */
+.open{display:grid;gap:8px}
+.open .item{display:grid;grid-template-columns:minmax(200px,280px) 1fr;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.open .cands{display:flex;gap:6px;flex-wrap:wrap}
+.cand{border:1px solid var(--line);background:var(--surface-2);border-radius:99px;padding:4px 10px;font-size:13px;cursor:pointer}
+.cand:hover{border-color:var(--accent)}
+.cand.ot{border-style:dashed}
+.cand small{color:var(--ink-2)}
+
+/* Forms */
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.form label{display:grid;gap:4px;font-size:13px;color:var(--ink-2);font-weight:500}
+.form label.wide{grid-column:1/-1}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:20px;width:min(560px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{font-size:18px;margin-bottom:14px}
+dialog .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+table.targets input{width:58px;text-align:center}
+table.targets td,table.targets th{padding:4px 6px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:60;font-size:14px;max-width:calc(100vw - 32px)}
+
+@media (max-width:700px){
+  .open .item{grid-template-columns:1fr}
+  table.grid .name{min-width:130px}
+}
+@media print{
+  @page{size:landscape;margin:8mm}
+  header.top,.toolbar,.noprint,#pop,.legend .noprint{display:none !important}
+  body{background:#fff;color:#000;font-size:11px}
+  main{padding:0}
+  .gridwrap{max-height:none;overflow:visible;border:0}
+  table.grid{font-size:10px}
+  table.grid td.c{height:22px;width:auto;min-width:0}
+  table.grid thead th,table.grid .name{position:static}
+  .printhead{display:block !important;margin-bottom:6px}
+}
+.printhead{display:none}
+</style>
+</head>
+<body>
+
+<section id="lock">
+  <form id="lockform">
+    <div class="mark"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 12v6M9 15h6"/></svg></div>
+    <div>
+      <h1 style="font-size:24px">The Pines HC Scheduling</h1>
+      <p class="muted" style="margin:6px 0 0">Nursing department staff schedule. Password required.</p>
+    </div>
+    <input id="pw" type="password" placeholder="Password" aria-label="Password" autocomplete="current-password" required autofocus>
+    <label class="row muted" style="font-size:14px"><input type="checkbox" id="remember" style="width:auto"> Keep me signed in on this device</label>
+    <button class="btn primary" id="unlock" style="justify-content:center">Unlock</button>
+    <p class="err" id="lockerr" role="alert"></p>
+  </form>
+</section>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <h1><span class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M12 12v6M9 15h6"/></svg></span><span id="facility">The Pines HC Scheduling</span></h1>
+    <nav class="tabs" id="tabs">
+      <button data-v="schedule" class="on">Schedule</button>
+      <button data-v="day">Day Sheet</button>
+      <button data-v="open">Open Shifts</button>
+      <button data-v="staff">Staff</button>
+      <button data-v="requests">Time Off</button>
+      <button data-v="settings">Settings</button>
+    </nav>
+    <span class="spacer"></span>
+    <span class="sync" id="sync"><span class="dot"></span><span id="synctext">Loading…</span></span>
+    <button class="btn sm" id="lockbtn" title="Lock">Lock</button>
+  </header>
+  <main>
+    <div id="banner"></div>
+    <section class="view" id="v-schedule"></section>
+    <section class="view hidden" id="v-day"></section>
+    <section class="view hidden" id="v-open"></section>
+    <section class="view hidden" id="v-staff"></section>
+    <section class="view hidden" id="v-requests"></section>
+    <section class="view hidden" id="v-settings"></section>
+  </main>
+</div>
+
+<div id="pop" class="hidden" role="dialog" aria-label="Assign shift"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+'use strict';
+// The Pines HC Scheduling: a single-page staff scheduler for the nursing
+// department. The schedule is stored AES-256-GCM encrypted in a GitHub repo, so
+// the repo (and this page) only ever hold ciphertext. Anyone with the password
+// can view; editing also needs a GitHub token that can write to that repo.
+
+const CFG = { owner: 'granviladmin-lab', repo: 'pines-hc-scheduling', branch: 'main', path: 'data/schedule.enc' };
+const LOCK = {"iter":600000,"salt":"Y0/gu9DZgB7t9yJNYZdzww==","iv":"gitURClZtIGd7kHe","ct":"J5qvPVwlLlKeSI8mKV7aP+2/dZtC3vZYrWAE"}; // { iter, salt, iv, ct }: the password check, written by build.mjs
+
+const $ = (id) => document.getElementById(id);
+const LS = {
+  get(k) { try { return localStorage.getItem('hcs.' + k); } catch { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem('hcs.' + k) : localStorage.setItem('hcs.' + k, v); } catch {} },
+};
+
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
+    else if (v === true) e.setAttribute(k, '');
+    else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : String(c));
+  return e;
+}
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+
+function toast(msg, ms = 2600) {
+  const t = el('div', { class: 'toast', role: 'status', text: msg });
+  document.body.append(t);
+  setTimeout(() => t.remove(), ms);
+}
+
+// ---------- Dates (plain 'YYYY-MM-DD' strings, computed in UTC so DST never shifts a day)
+const D = {
+  parse: (s) => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d); },
+  fmt: (t) => new Date(t).toISOString().slice(0, 10),
+  add: (s, n) => D.fmt(D.parse(s) + n * 86400000),
+  dow: (s) => new Date(D.parse(s)).getUTCDay(),
+  diff: (a, b) => Math.round((D.parse(b) - D.parse(a)) / 86400000),
+  today: () => { const n = new Date(); return D.fmt(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())); },
+  label: (s, o = { weekday: 'short', month: 'short', day: 'numeric' }) => new Date(D.parse(s)).toLocaleDateString(undefined, { ...o, timeZone: 'UTC' }),
+};
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const mins = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+const fmtTime = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  const ap = h < 12 ? 'a' : 'p';
+  const h12 = h % 12 || 12;
+  return m ? `${h12}:${String(m).padStart(2, '0')}${ap}` : `${h12}${ap}`;
+};
+
+// ---------- Crypto
+const b64 = { enc: (u) => btoa(String.fromCharCode(...new Uint8Array(u))), dec: (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0)) };
+function b64big(u8) { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
+
+async function deriveKey(pw) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64.dec(LOCK.salt), iterations: LOCK.iter, hash: 'SHA-256' }, base,
+    { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+}
+async function checkKey(key) {
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64.dec(LOCK.iv) }, key, b64.dec(LOCK.ct));
+  return new TextDecoder().decode(pt) === 'pines-hc-ok';
+}
+async function gzip(bytes, dir) {
+  if (typeof CompressionStream === 'undefined') return null;
+  const s = new Blob([bytes]).stream().pipeThrough(dir === 'c' ? new CompressionStream('gzip') : new DecompressionStream('gzip'));
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+async function seal(obj) {
+  let bytes = new TextEncoder().encode(JSON.stringify(obj));
+  const z = await gzip(bytes, 'c');
+  if (z) bytes = z;
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, KEY, bytes));
+  return JSON.stringify({ v: 1, z: z ? 1 : 0, iv: b64.enc(iv), ct: b64big(ct) });
+}
+async function open_(text) {
+  const env = JSON.parse(text);
+  let bytes = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64.dec(env.iv) }, KEY, b64.dec(env.ct)));
+  if (env.z) {
+    const u = await gzip(bytes, 'd');
+    if (!u) throw new Error('This browser is too old to open the schedule.');
+    bytes = u;
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+// ---------- Data model
+// Everything is a map keyed by id, so edits from two schedulers merge cleanly.
+function defaults() {
+  return {
+    v: 1,
+    settings: { facility: 'The Pines HC Scheduling', anchor: '2026-10-18', periodDays: 14, otWeekly: 40, minRest: 8, allowFloat: true },
+    windows: { D: { name: 'Day', order: 1 }, E: { name: 'Evening', order: 2 }, N: { name: 'Night', order: 3 } },
+    roles: {
+      RN: { name: 'RN', title: 'Registered Nurse', order: 1 },
+      LPN: { name: 'LPN', title: 'Licensed Practical Nurse', order: 2 },
+      CNA: { name: 'CNA', title: 'Certified Nursing Assistant', order: 3 },
+      CMA: { name: 'CMA', title: 'Medication Aide', order: 4 },
+    },
+    units: { hc: { name: 'Health Care Center', order: 1 } },
+    shifts: {
+      D: { code: 'D', name: 'Day', start: '07:00', end: '15:00', unpaid: 30, color: '#D98A12', covers: ['D'], order: 1 },
+      E: { code: 'E', name: 'Evening', start: '15:00', end: '23:00', unpaid: 30, color: '#7B4FD6', covers: ['E'], order: 2 },
+      N: { code: 'N', name: 'Night', start: '23:00', end: '07:00', unpaid: 30, color: '#2D4C9C', covers: ['N'], order: 3 },
+      D12: { code: 'D12', name: 'Day 12', start: '07:00', end: '19:00', unpaid: 30, color: '#B5541B', covers: ['D'], order: 4 },
+      N12: { code: 'N12', name: 'Night 12', start: '19:00', end: '07:00', unpaid: 30, color: '#1E3166', covers: ['N'], order: 5 },
+    },
+    targets: { hc: { D: { RN: 1, LPN: 1, CNA: 4, CMA: 1 }, E: { RN: 1, LPN: 1, CNA: 3, CMA: 1 }, N: { RN: 1, LPN: 0, CNA: 2, CMA: 0 } } },
+    staff: {},
+    assign: {},
+    requests: {},
+    log: {},
+  };
+}
+const sorted = (map) => Object.entries(map || {}).sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0) || String(a[1].name).localeCompare(String(b[1].name)));
+
+let KEY = null;
+let DATA = null;
+let FILESHA = null;    // the data file's blob sha on GitHub (for safe writes)
+let OPS = [];          // edits not yet saved, replayed on top of a newer copy if someone else saved first
+let saving = false, saveTimer = null, refreshTimer = null;
+const UI = { view: 'schedule', start: null, days: 14, unit: 'all', role: 'all', day: D.today(), cell: null };
+
+const canEdit = () => !!LS.get('token');
+const who = () => LS.get('who') || 'Scheduler';
+
+function getPath(obj, p) { return p.reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+function setPath(obj, p, v) {
+  let o = obj;
+  for (let i = 0; i < p.length - 1; i++) {
+    if (o[p[i]] == null || typeof o[p[i]] !== 'object') o[p[i]] = {};
+    o = o[p[i]];
+  }
+  const k = p[p.length - 1];
+  if (v === undefined) delete o[k]; else o[k] = v;
+  // Drop empty day maps so the file stays small.
+  if (v === undefined && p[0] === 'assign' && p.length === 3) {
+    const parent = getPath(obj, p.slice(0, -1));
+    if (parent && typeof parent === 'object' && !Object.keys(parent).length) setPath(obj, p.slice(0, -1), undefined);
+  }
+}
+function note(msg) {
+  if (!canEdit()) return;
+  const id = Date.now().toString(36) + uid().slice(0, 3);
+  const entry = { at: new Date().toISOString(), by: who(), msg };
+  setPath(DATA, ['log', id], entry);
+  OPS.push({ p: ['log', id], v: entry });
+  persistDraft();
+  scheduleSave();
+}
+function edit(p, v, msg) {
+  if (!canEdit()) { toast('Viewing only. Add a GitHub token in Settings to edit.'); return false; }
+  const val = v === undefined ? undefined : JSON.parse(JSON.stringify(v));
+  setPath(DATA, p, val);
+  OPS.push({ p, v: val });
+  if (msg) note(msg);
+  else { persistDraft(); scheduleSave(); }
+  return true;
+}
+
+// ---------- Schedule math
+function shiftHours(sh) {
+  let len = mins(sh.end) - mins(sh.start);
+  if (len <= 0) len += 1440;
+  return Math.max(0, len - (sh.unpaid || 0)) / 60;
+}
+function shiftSpan(date, sh) {
+  const s = D.parse(date) + mins(sh.start) * 60000;
+  let e = D.parse(date) + mins(sh.end) * 60000;
+  if (e <= s) e += 86400000;
+  return [s, e];
+}
+const a = (date, sid) => DATA.assign[date]?.[sid];
+const isWork = (x) => x && DATA.shifts[x.s];
+function weekStart(date) { return D.add(date, -D.dow(date)); }
+function hoursBetween(sid, from, toExcl) {
+  let h = 0;
+  for (let d = from; d < toExcl; d = D.add(d, 1)) { const x = a(d, sid); if (isWork(x)) h += shiftHours(DATA.shifts[x.s]); }
+  return h;
+}
+function periodStartFor(date) {
+  const st = DATA.settings;
+  const n = Math.floor(D.diff(st.anchor, date) / st.periodDays);
+  return D.add(st.anchor, n * st.periodDays);
+}
+function targetFor(staff, days) {
+  const t = Number(staff.hours) || 0; // hours per pay period
+  return t * days / DATA.settings.periodDays;
+}
+function unitOf(sid, date) { return a(date, sid)?.u || DATA.staff[sid]?.unit; }
+function offRequested(sid, date) {
+  return Object.values(DATA.requests).find((r) => r.staff === sid && r.status !== 'denied' && r.from <= date && date <= (r.to || r.from));
+}
+
+// Problems with one person's shift on one date.
+function warningsFor(sid, date, shiftId = a(date, sid)?.s) {
+  const sh = DATA.shifts[shiftId];
+  if (!sh) return [];
+  const out = [];
+  const [s, e] = shiftSpan(date, sh);
+  for (const d of [D.add(date, -1), D.add(date, 1)]) {
+    const x = a(d, sid);
+    if (!isWork(x)) continue;
+    const [s2, e2] = shiftSpan(d, DATA.shifts[x.s]);
+    const gap = d < date ? (s - e2) / 3600000 : (s2 - e) / 3600000;
+    if (gap < 0) out.push(`Overlaps the ${DATA.shifts[x.s].name} shift on ${D.label(d)}`);
+    else if (gap < DATA.settings.minRest) out.push(`Only ${gap} h rest ${d < date ? 'after' : 'before'} the ${DATA.shifts[x.s].name} shift on ${D.label(d)}`);
+  }
+  const ws = weekStart(date);
+  const wk = hoursBetween(sid, ws, D.add(ws, 7)) + (a(date, sid)?.s === shiftId ? 0 : shiftHours(sh));
+  if (wk > DATA.settings.otWeekly) out.push(`${wk} h that week (overtime over ${DATA.settings.otWeekly})`);
+  const r = offRequested(sid, date);
+  if (r) out.push(`Asked for this day off (${r.status})`);
+  const st = DATA.staff[sid];
+  if (st && !st.active) out.push('Inactive staff member');
+  return out;
+}
+
+// How many of a role work a coverage window on a date, in a unit (or all units).
+function coverage(date, win, role, unit) {
+  let n = 0;
+  for (const [sid, x] of Object.entries(DATA.assign[date] || {})) {
+    const st = DATA.staff[sid];
+    if (!st || st.role !== role || !isWork(x)) continue;
+    if (!DATA.shifts[x.s].covers?.includes(win)) continue;
+    if (unit !== 'all' && (x.u || st.unit) !== unit) continue;
+    n++;
+  }
+  return n;
+}
+function need(win, role, unit) {
+  if (unit === 'all') return Object.keys(DATA.units).reduce((t, u) => t + (Number(DATA.targets[u]?.[win]?.[role]) || 0), 0);
+  return Number(DATA.targets[unit]?.[win]?.[role]) || 0;
+}
+function shortfalls(from, days, unit) {
+  const out = [];
+  const units = unit === 'all' ? Object.keys(DATA.units) : [unit];
+  for (let i = 0; i < days; i++) {
+    const d = D.add(from, i);
+    for (const u of units) for (const [w] of sorted(DATA.windows)) for (const [r] of sorted(DATA.roles)) {
+      const missing = need(w, r, u) - coverage(d, w, r, u);
+      if (missing > 0) out.push({ date: d, unit: u, win: w, role: r, missing });
+    }
+  }
+  return out;
+}
+function shiftForWindow(win) {
+  const list = sorted(DATA.shifts).filter(([, s]) => s.covers?.includes(win));
+  return (list.find(([, s]) => s.covers.length === 1 && shiftHours(s) <= 8.5) || list[0] || [])[0];
+}
+// Who could fill a gap, best first.
+function candidates(date, win, role, unit, shiftId = shiftForWindow(win)) {
+  const sh = DATA.shifts[shiftId];
+  if (!sh) return [];
+  const ps = periodStartFor(date);
+  const out = [];
+  for (const [sid, st] of Object.entries(DATA.staff)) {
+    if (!st.active || st.role !== role) continue;
+    if (!DATA.settings.allowFloat && unit !== 'all' && st.unit !== unit) continue;
+    if (a(date, sid)) continue;
+    if (offRequested(sid, date)) continue;
+    const w = warningsFor(sid, date, shiftId).filter((x) => !x.includes('overtime'));
+    if (w.length) continue;
+    const ws = weekStart(date);
+    const wk = hoursBetween(sid, ws, D.add(ws, 7)) + shiftHours(sh);
+    const per = hoursBetween(sid, ps, D.add(ps, DATA.settings.periodDays));
+    const gap = (Number(st.hours) || 0) - per;
+    out.push({ sid, st, ot: wk > DATA.settings.otWeekly, per, gap, home: st.unit === unit });
+  }
+  const typeRank = { FT: 0, PT: 1, PRN: 2 };
+  out.sort((x, y) => x.ot - y.ot || y.home - x.home || (y.gap > 0) - (x.gap > 0) || (typeRank[x.st.type] ?? 1) - (typeRank[y.st.type] ?? 1) || y.gap - x.gap || x.st.name.localeCompare(y.st.name));
+  return out.map((c) => ({ ...c, shiftId }));
+}
+
+// ---------- GitHub storage
+async function gh(path, opts = {}) {
+  const h = { Accept: 'application/vnd.github+json', ...(opts.headers || {}) };
+  const tok = LS.get('token');
+  if (tok) h.Authorization = 'Bearer ' + tok;
+  return fetch('https://api.github.com' + path, { ...opts, headers: h, cache: 'no-store' });
+}
+async function fetchRemote() {
+  const { owner, repo, branch, path } = CFG;
+  if (LS.get('token')) {
+    const r = await gh(`/repos/${owner}/${repo}/contents/${path}?ref=${branch}&t=${Date.now()}`);
+    if (r.status === 404) return { text: null, sha: null };
+    if (r.status === 401) throw new Error('The GitHub token was refused. Check it in Settings.');
+    if (!r.ok) throw new Error(`GitHub said ${r.status}`);
+    const j = await r.json();
+    let text;
+    if (j.content) text = atob(j.content.replace(/\n/g, ''));
+    else text = await (await fetch(j.download_url, { cache: 'no-store' })).text();
+    return { text, sha: j.sha };
+  }
+  // Viewers: find the newest commit, then read the file at that commit (no CDN staleness).
+  let ref = branch;
+  try {
+    const r = await gh(`/repos/${owner}/${repo}/commits/${branch}`, { headers: { Accept: 'application/vnd.github.sha' } });
+    if (r.ok) ref = (await r.text()).trim();
+  } catch {}
+  const r = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`, { cache: 'no-store' });
+  if (r.status === 404) return { text: null, sha: null };
+  if (!r.ok) throw new Error(`GitHub said ${r.status}`);
+  return { text: await r.text(), sha: null };
+}
+
+async function load({ quiet } = {}) {
+  setSync('busy', 'Loading…');
+  try {
+    const { text, sha } = await fetchRemote();
+    const remote = text ? await open_(text) : defaults();
+    FILESHA = sha;
+    DATA = remote;
+    for (const op of OPS) setPath(DATA, op.p, op.v);
+    migrate();
+    persistDraft();
+    setSync(OPS.length ? 'busy' : 'ok', OPS.length ? 'Unsaved changes' : (text ? `Up to date ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'New schedule (not saved yet)'));
+    if (OPS.length) scheduleSave();
+  } catch (e) {
+    if (!DATA) {
+      const draft = await loadDraft();
+      DATA = draft || defaults();
+      migrate();
+    }
+    setSync('bad', 'Offline: ' + (e.message || e));
+    if (!quiet) toast("Couldn't load the latest schedule. Showing the copy saved on this device.");
+  }
+  render();
+}
+
+function scheduleSave() {
+  setSync('busy', 'Unsaved changes');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 1500);
+}
+async function save() {
+  if (saving) { scheduleSave(); return; }
+  if (!OPS.length || !canEdit()) return;
+  saving = true;
+  setSync('busy', 'Saving…');
+  const { owner, repo, branch, path } = CFG;
+  const sent = OPS.length;
+  try {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      // Keep the change log to the newest 400 entries.
+      const ids = Object.keys(DATA.log || {}).sort();
+      for (const id of ids.slice(0, Math.max(0, ids.length - 400))) delete DATA.log[id];
+      DATA.updatedAt = new Date().toISOString();
+      DATA.updatedBy = who();
+      const body = { message: `Schedule update by ${who()}`, content: btoa(await seal(DATA)), branch };
+      if (FILESHA) body.sha = FILESHA;
+      const r = await gh(`/repos/${owner}/${repo}/contents/${path}`, { method: 'PUT', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
+      if (r.ok) {
+        FILESHA = (await r.json()).content.sha;
+        OPS = OPS.slice(sent);
+        persistDraft();
+        setSync(OPS.length ? 'busy' : 'ok', OPS.length ? 'Unsaved changes' : `Saved ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
+        if (OPS.length) scheduleSave();
+        return;
+      }
+      if (r.status === 409 || r.status === 422) {
+        // Someone else saved first: take their copy and re-apply our edits on top.
+        const { text, sha } = await fetchRemote();
+        FILESHA = sha;
+        if (text) {
+          DATA = await open_(text);
+          for (const op of OPS) setPath(DATA, op.p, op.v);
+          migrate();
+          render();
+        }
+        continue;
+      }
+      if (r.status === 401 || r.status === 403) throw new Error('The GitHub token cannot write to the schedule. Check it in Settings.');
+      if (r.status === 404) throw new Error('The schedule repository was not found, or the token cannot see it.');
+      throw new Error(`GitHub said ${r.status}`);
+    }
+    throw new Error('Kept colliding with other saves');
+  } catch (e) {
+    setSync('bad', 'Not saved: ' + (e.message || e));
+  } finally {
+    saving = false;
+  }
+}
+
+// An encrypted copy on this device, so the schedule opens offline and unsaved edits survive a reload.
+async function persistDraft() {
+  try { LS.set('draft', await seal({ data: DATA, ops: OPS, sha: FILESHA })); } catch {}
+}
+async function loadDraft() {
+  try {
+    const t = LS.get('draft');
+    if (!t) return null;
+    const d = await open_(t);
+    OPS = d.ops || [];
+    FILESHA = d.sha || null;
+    return d.data;
+  } catch { return null; }
+}
+function migrate() {
+  const def = defaults();
+  for (const k of Object.keys(def)) if (DATA[k] == null) DATA[k] = def[k];
+  DATA.settings = { ...def.settings, ...DATA.settings };
+}
+
+function setSync(state, text) {
+  $('sync').className = 'sync ' + state;
+  $('synctext').textContent = (canEdit() ? '' : 'View only · ') + text;
+}
+
+// ---------- Rendering
+function render() {
+  if (!DATA) return;
+  $('facility').textContent = DATA.settings.facility || 'The Pines HC Scheduling';
+  document.title = DATA.settings.facility || 'The Pines HC Scheduling';
+  if (!UI.start) UI.start = periodStartFor(D.today());
+  const b = $('banner');
+  b.innerHTML = '';
+  if (!canEdit()) b.append(el('div', { class: 'banner noprint', style: { marginBottom: '14px' } }, 'You are viewing the schedule. Schedulers can turn on editing in ', el('a', { href: '#', onclick: (e) => { e.preventDefault(); show('settings'); } }, 'Settings'), '.'));
+  else if (!Object.keys(DATA.staff).length) b.append(el('div', { class: 'banner noprint', style: { marginBottom: '14px' } }, 'Start by adding your nursing staff on the ', el('a', { href: '#', onclick: (e) => { e.preventDefault(); show('staff'); } }, 'Staff'), ' tab, then set shift types and staffing targets in Settings.'));
+  ({ schedule: renderSchedule, day: renderDay, open: renderOpen, staff: renderStaff, requests: renderRequests, settings: renderSettings })[UI.view]();
+}
+function show(v) {
+  UI.view = v;
+  for (const btn of $('tabs').children) btn.classList.toggle('on', btn.dataset.v === v);
+  for (const s of document.querySelectorAll('main > .view')) s.classList.toggle('hidden', s.id !== 'v-' + v);
+  closePop();
+  render();
+  window.scrollTo(0, 0);
+}
+
+function unitSelect(value, onchange, withAll = true) {
+  return el('select', { 'aria-label': 'Unit', onchange: (e) => onchange(e.target.value) },
+    withAll && el('option', { value: 'all', selected: value === 'all' }, 'All units'),
+    sorted(DATA.units).map(([id, u]) => el('option', { value: id, selected: value === id }, u.name)));
+}
+function roleSelect(value, onchange) {
+  return el('select', { 'aria-label': 'Role', onchange: (e) => onchange(e.target.value) },
+    el('option', { value: 'all', selected: value === 'all' }, 'All roles'),
+    sorted(DATA.roles).map(([id, r]) => el('option', { value: id, selected: value === id }, r.name)));
+}
+function chipFor(x) {
+  if (!x) return '';
+  if (x.s === 'OFF') return el('span', { class: 'chip off', text: 'off' });
+  if (x.s === 'PTO') return el('span', { class: 'chip pto', text: 'PTO' });
+  if (x.s === 'CO') return el('span', { class: 'chip co', text: 'C/O' });
+  const sh = DATA.shifts[x.s];
+  if (!sh) return el('span', { class: 'chip off', text: '?' });
+  return el('span', { class: 'chip', style: { background: sh.color }, text: sh.code });
+}
+
+function renderSchedule() {
+  const v = $('v-schedule');
+  v.innerHTML = '';
+  const days = UI.days;
+  const dates = Array.from({ length: days }, (_, i) => D.add(UI.start, i));
+  const end = dates[dates.length - 1];
+  const today = D.today();
+
+  v.append(el('div', { class: 'toolbar noprint' },
+    el('button', { class: 'btn', 'aria-label': 'Previous period', onclick: () => { UI.start = D.add(UI.start, -days); render(); } }, '‹'),
+    el('h2', { text: `${D.label(UI.start, { month: 'short', day: 'numeric' })} – ${D.label(end, { month: 'short', day: 'numeric', year: 'numeric' })}` }),
+    el('button', { class: 'btn', 'aria-label': 'Next period', onclick: () => { UI.start = D.add(UI.start, days); render(); } }, '›'),
+    el('button', { class: 'btn sm', onclick: () => { UI.start = periodStartFor(today); render(); } }, 'This period'),
+    el('select', { 'aria-label': 'Length', onchange: (e) => { UI.days = Number(e.target.value); render(); } },
+      [7, 14, 28].map((n) => el('option', { value: n, selected: n === days }, n === 7 ? '1 week' : n === 14 ? '2 weeks' : '4 weeks'))),
+    unitSelect(UI.unit, (u) => { UI.unit = u; render(); }),
+    roleSelect(UI.role, (r) => { UI.role = r; render(); }),
+    el('span', { class: 'spacer' }),
+    canEdit() && el('button', { class: 'btn sm', onclick: () => copyPrevious(dates) }, 'Copy previous'),
+    el('button', { class: 'btn sm', onclick: () => exportCSV(dates) }, 'CSV'),
+    el('button', { class: 'btn sm', onclick: () => window.print() }, 'Print'),
+  ));
+  v.append(el('div', { class: 'printhead' }, el('h2', { text: `${DATA.settings.facility} · ${UI.unit === 'all' ? 'All units' : DATA.units[UI.unit]?.name} · ${D.label(UI.start)} – ${D.label(end)}` })));
+
+  const legend = el('div', { class: 'legend' },
+    sorted(DATA.shifts).map(([, s]) => el('span', {}, el('i', { style: { background: s.color } }), `${s.code} ${s.name} ${fmtTime(s.start)}–${fmtTime(s.end)}`)),
+    el('span', {}, el('i', { style: { background: '#7A8794' } }), 'PTO'),
+    el('span', {}, el('i', { style: { border: '1.5px dashed var(--crit)' } }), 'Call-out'),
+    el('span', { class: 'noprint' }, el('i', { style: { background: 'var(--amber)', borderRadius: '50%', width: '8px', height: '8px' } }), 'Time-off request'),
+    el('span', { class: 'noprint' }, el('b', { style: { color: 'var(--crit)' }, text: '!' }), 'Rest, overtime or request conflict'));
+  v.append(legend);
+
+  const staff = Object.entries(DATA.staff)
+    .filter(([sid, s]) => (s.active || dates.some((d) => a(d, sid))))
+    .filter(([, s]) => UI.role === 'all' || s.role === UI.role)
+    .filter(([sid, s]) => UI.unit === 'all' || s.unit === UI.unit || dates.some((d) => a(d, sid)?.u === UI.unit))
+    .sort((x, y) => (DATA.roles[x[1].role]?.order ?? 99) - (DATA.roles[y[1].role]?.order ?? 99) || x[1].name.localeCompare(y[1].name));
+
+  const table = el('table', { class: 'grid' });
+  const hrow = el('tr', {}, el('th', { class: 'name' }, 'Staff'));
+  for (const d of dates) {
+    const cls = [D.dow(d) % 6 === 0 ? 'we' : '', d === today ? 'td' : ''].join(' ');
+    hrow.append(el('th', { class: cls }, el('span', { class: 'dow', text: DOW[D.dow(d)] }), D.label(d, { month: 'numeric', day: 'numeric' })));
+  }
+  hrow.append(el('th', { class: 'tot', title: 'Scheduled hours / target for these dates' }, 'Hours'));
+  table.append(el('thead', {}, hrow));
+
+  const tb = el('tbody');
+  let lastRole = null;
+  const ro = !canEdit();
+  for (const [sid, st] of staff) {
+    if (st.role !== lastRole) {
+      lastRole = st.role;
+      tb.append(el('tr', { class: 'group' }, el('td', { colspan: days + 2 }, DATA.roles[st.role]?.title || st.role || 'Other')));
+    }
+    const tr = el('tr', {}, el('td', { class: 'name', title: [st.name, st.phone].filter(Boolean).join(' · ') }, st.name,
+      el('small', { text: [st.type, UI.unit === 'all' && Object.keys(DATA.units).length > 1 ? DATA.units[st.unit]?.name : ''].filter(Boolean).join(' · ') })));
+    for (const d of dates) {
+      const x = a(d, sid);
+      const cls = ['c', ro ? 'ro' : '', D.dow(d) % 6 === 0 ? 'we' : '', d === today ? 'td' : ''].join(' ');
+      const td = el('td', { class: cls, tabindex: 0, 'data-sid': sid, 'data-d': d, 'aria-label': `${st.name}, ${D.label(d)}: ${x ? (DATA.shifts[x.s]?.name || x.s) : 'not scheduled'}` }, chipFor(x));
+      if (offRequested(sid, d)) td.append(el('span', { class: 'req', title: 'Time-off request' }));
+      if (isWork(x)) {
+        const w = warningsFor(sid, d);
+        if (w.length) td.append(el('span', { class: 'warn', title: w.join('\n'), text: '!' }));
+        if (x.u && x.u !== st.unit) td.append(el('span', { class: 'float', title: 'Floating to ' + (DATA.units[x.u]?.name || ''), text: '↗' }));
+      }
+      if (x?.n) { td.append(el('span', { class: 'note', text: '✎' })); td.title = x.n; }
+      tr.append(td);
+    }
+    const h = hoursBetween(sid, dates[0], D.add(end, 1));
+    const t = targetFor(st, days);
+    let ot = false;
+    for (let w = weekStart(dates[0]); w <= end; w = D.add(w, 7)) if (hoursBetween(sid, w, D.add(w, 7)) > DATA.settings.otWeekly) ot = true;
+    tr.append(el('td', { class: 'tot' + (ot ? ' ot' : ''), title: ot ? 'Overtime in at least one week' : '' }, `${+h.toFixed(1)}${t ? ' / ' + +t.toFixed(0) : ''}`));
+    tb.append(tr);
+  }
+  if (!staff.length) tb.append(el('tr', {}, el('td', { colspan: days + 2, style: { padding: '28px', textAlign: 'center' }, class: 'muted' }, 'No staff to show. Add people on the Staff tab.')));
+  table.append(tb);
+
+  // Coverage: who's on vs the staffing target, per window and role.
+  const tf = el('tfoot');
+  const roles = sorted(DATA.roles).filter(([r]) => UI.role === 'all' || r === UI.role);
+  for (const [w, win] of sorted(DATA.windows)) {
+    for (const [r, role] of roles) {
+      const n = need(w, r, UI.unit);
+      const any = n > 0 || dates.some((d) => coverage(d, w, r, UI.unit) > 0);
+      if (!any) continue;
+      const tr = el('tr', {}, el('td', { class: 'name' }, `${win.name} · ${role.name}`));
+      for (const d of dates) {
+        const have = coverage(d, w, r, UI.unit);
+        const cls = 'cov ' + (have < n ? 'short' : have > n ? 'over' : 'met');
+        tr.append(el('td', { class: cls, title: `${win.name} ${role.name}: ${have} scheduled, ${n} needed` }, `${have}/${n}`));
+      }
+      tr.append(el('td', { class: 'tot' }, ''));
+      tf.append(tr);
+    }
+  }
+  table.append(tf);
+  const wrap = el('div', { class: 'gridwrap' }, table);
+  v.append(wrap);
+
+  if (!ro) {
+    table.addEventListener('click', (e) => { const td = e.target.closest('td.c'); if (td) openPop(td); });
+    table.addEventListener('keydown', onGridKey);
+  }
+}
+
+function onGridKey(e) {
+  const td = e.target.closest('td.c');
+  if (!td) return;
+  const move = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[e.key];
+  if (move) {
+    e.preventDefault();
+    const rows = [...td.closest('tbody').querySelectorAll('tr')].filter((r) => r.querySelector('td.c'));
+    const ri = rows.indexOf(td.parentElement);
+    const ci = [...td.parentElement.querySelectorAll('td.c')].indexOf(td);
+    const r = rows[ri + move[0]];
+    const next = r?.querySelectorAll('td.c')[ci + move[1]];
+    next?.focus();
+    return;
+  }
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPop(td); return; }
+  if (e.key === 'Escape') { closePop(); return; }
+  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); assign(td.dataset.sid, td.dataset.d, null); refocus(td); return; }
+  const k = e.key.toUpperCase();
+  const map = { O: 'OFF', P: 'PTO', C: 'CO' };
+  const byCode = sorted(DATA.shifts).find(([, s]) => s.code.toUpperCase() === k);
+  const s = byCode ? byCode[0] : map[k];
+  if (s && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); assign(td.dataset.sid, td.dataset.d, s); refocus(td); }
+}
+function refocus(td) {
+  const { sid, d } = td.dataset;
+  requestAnimationFrame(() => document.querySelector(`td.c[data-sid="${sid}"][data-d="${d}"]`)?.focus());
+}
+
+function assign(sid, date, s, extra = {}) {
+  const st = DATA.staff[sid];
+  const prev = a(date, sid);
+  if (!s) {
+    if (!prev) return;
+    edit(['assign', date, sid], undefined, `Cleared ${st?.name} on ${D.label(date)}`);
+  } else {
+    const val = { s };
+    const u = extra.u !== undefined ? extra.u : prev?.u;
+    const n = extra.n !== undefined ? extra.n : prev?.n;
+    if (u && u !== st?.unit) val.u = u;
+    if (n) val.n = n;
+    const label = DATA.shifts[s]?.name || { OFF: 'Off', PTO: 'PTO', CO: 'Call-out' }[s];
+    edit(['assign', date, sid], val, `${st?.name}: ${label} on ${D.label(date)}`);
+  }
+  render();
+}
+
+function openPop(td) {
+  const { sid, d } = td.dataset;
+  const st = DATA.staff[sid];
+  const x = a(d, sid) || {};
+  const pop = $('pop');
+  pop.innerHTML = '';
+  pop.append(el('div', {}, el('b', { text: st.name }), el('div', { class: 'muted', style: { fontSize: '13px' }, text: D.label(d, { weekday: 'long', month: 'long', day: 'numeric' }) })));
+  const grid = el('div', { class: 'shifts' });
+  for (const [id, s] of sorted(DATA.shifts)) {
+    grid.append(el('button', { class: x.s === id ? 'sel' : '', style: { background: s.color }, onclick: () => { assign(sid, d, id); closePop(); refocus(td); } },
+      s.code, el('small', { text: `${fmtTime(s.start)}–${fmtTime(s.end)}` })));
+  }
+  for (const [id, name] of [['OFF', 'Off'], ['PTO', 'PTO'], ['CO', 'Call-out']]) {
+    grid.append(el('button', { class: 'alt' + (x.s === id ? ' sel' : ''), onclick: () => { assign(sid, d, id); closePop(); refocus(td); } }, name));
+  }
+  pop.append(grid);
+  const w = isWork(x) ? warningsFor(sid, d) : [];
+  const r = offRequested(sid, d);
+  if (w.length || r) pop.append(el('div', { class: 'warns' }, (w.length ? w : [`Asked for this day off (${r.status})`]).map((t) => el('div', { text: '⚠ ' + t }))));
+  if (Object.keys(DATA.units).length > 1) {
+    pop.append(el('label', { class: 'row', style: { fontSize: '13px' } }, 'Unit',
+      unitSelectFor(x.u || st.unit, (u) => { if (x.s) assign(sid, d, x.s, { u }); })));
+  }
+  const note = el('input', { placeholder: 'Note (e.g. orientation, charge)', value: x.n || '' });
+  pop.append(el('div', { class: 'row' }, note,
+    el('button', { class: 'btn sm', onclick: () => { if (x.s) assign(sid, d, x.s, { n: note.value.trim() }); else toast('Pick a shift first.'); closePop(); } }, 'Save')));
+  pop.append(el('div', { class: 'row' },
+    el('button', { class: 'btn sm danger', onclick: () => { assign(sid, d, null); closePop(); refocus(td); } }, 'Clear'),
+    el('span', { class: 'spacer' }),
+    el('button', { class: 'btn sm', onclick: closePop }, 'Close')));
+  pop.classList.remove('hidden');
+  const rc = td.getBoundingClientRect();
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let left = Math.min(window.innerWidth - pw - 8, Math.max(8, rc.left + rc.width / 2 - pw / 2));
+  let top = rc.bottom + 6;
+  if (top + ph > window.innerHeight - 8) top = Math.max(8, rc.top - ph - 6);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+  UI.cell = td;
+}
+function unitSelectFor(value, onchange) {
+  return el('select', { onchange: (e) => onchange(e.target.value) }, sorted(DATA.units).map(([id, u]) => el('option', { value: id, selected: value === id }, u.name)));
+}
+function closePop() { $('pop').classList.add('hidden'); UI.cell = null; }
+document.addEventListener('mousedown', (e) => { if (!$('pop').contains(e.target) && !e.target.closest('td.c')) closePop(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePop(); });
+
+function copyPrevious(dates) {
+  const days = dates.length;
+  let n = 0;
+  const changes = [];
+  for (const d of dates) {
+    const src = D.add(d, -days);
+    for (const [sid, x] of Object.entries(DATA.assign[src] || {})) {
+      if (!DATA.staff[sid]?.active || a(d, sid) || x.s === 'CO' || x.s === 'PTO') continue;
+      if (offRequested(sid, d)) continue;
+      changes.push([d, sid, { ...x }]);
+    }
+  }
+  if (!changes.length) { toast('Nothing to copy: the previous period is empty or every cell here is already filled.'); return; }
+  if (!confirm(`Copy ${changes.length} shifts from the previous ${days} days into empty cells? Existing entries and time-off requests are left alone.`)) return;
+  for (const [d, sid, x] of changes) { edit(['assign', d, sid], x); n++; }
+  note(`Copied ${n} shifts from the previous ${days} days`);
+  render();
+  toast(`Copied ${n} shifts.`);
+}
+
+function exportCSV(dates) {
+  const rows = [['Name', 'Role', 'Type', 'Unit', ...dates.map((d) => `${DOW[D.dow(d)]} ${d}`), 'Hours']];
+  for (const [sid, st] of Object.entries(DATA.staff).sort((x, y) => x[1].name.localeCompare(y[1].name))) {
+    if (!st.active && !dates.some((d) => a(d, sid))) continue;
+    const cells = dates.map((d) => { const x = a(d, sid); return x ? (DATA.shifts[x.s]?.code || x.s) : ''; });
+    rows.push([st.name, st.role, st.type, DATA.units[st.unit]?.name || '', ...cells, hoursBetween(sid, dates[0], D.add(dates[dates.length - 1], 1))]);
+  }
+  const csv = rows.map((r) => r.map((c) => /[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c).join(',')).join('\n');
+  download(`schedule-${dates[0]}.csv`, csv, 'text/csv');
+}
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = el('a', { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+// ---------- Day sheet
+function renderDay() {
+  const v = $('v-day');
+  v.innerHTML = '';
+  const d = UI.day;
+  v.append(el('div', { class: 'toolbar noprint' },
+    el('button', { class: 'btn', 'aria-label': 'Previous day', onclick: () => { UI.day = D.add(d, -1); render(); } }, '‹'),
+    el('h2', { text: D.label(d, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) }),
+    el('button', { class: 'btn', 'aria-label': 'Next day', onclick: () => { UI.day = D.add(d, 1); render(); } }, '›'),
+    el('input', { type: 'date', value: d, onchange: (e) => { if (e.target.value) { UI.day = e.target.value; render(); } } }),
+    el('button', { class: 'btn sm', onclick: () => { UI.day = D.today(); render(); } }, 'Today'),
+    unitSelect(UI.unit, (u) => { UI.unit = u; render(); }),
+    el('span', { class: 'spacer' }),
+    el('button', { class: 'btn sm', onclick: () => window.print() }, 'Print')));
+  v.append(el('div', { class: 'printhead' }, el('h2', { text: `${DATA.settings.facility} · ${D.label(d, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}` })));
+  const grid = el('div', { class: 'daygrid' });
+  for (const [w, win] of sorted(DATA.windows)) {
+    const card = el('div', { class: 'card' });
+    const shiftsHere = sorted(DATA.shifts).filter(([, s]) => s.covers?.includes(w));
+    card.append(el('h3', {}, el('span', { text: win.name }), el('span', { class: 'muted', style: { fontSize: '13px', fontFamily: 'var(--body)', fontWeight: 500 }, text: shiftsHere.map(([, s]) => `${s.code} ${fmtTime(s.start)}–${fmtTime(s.end)}`).join(' · ') })));
+    for (const [r, role] of sorted(DATA.roles)) {
+      const people = Object.entries(DATA.assign[d] || {}).filter(([sid, x]) => {
+        const st = DATA.staff[sid];
+        return st && st.role === r && isWork(x) && DATA.shifts[x.s].covers?.includes(w) && (UI.unit === 'all' || (x.u || st.unit) === UI.unit);
+      });
+      const n = need(w, r, UI.unit);
+      if (!people.length && !n) continue;
+      card.append(el('div', { style: { marginTop: '8px', fontWeight: 600, fontSize: '13px', display: 'flex', justifyContent: 'space-between' } },
+        el('span', { text: role.name }), el('span', { class: people.length < n ? 'need' : 'muted', text: `${people.length}/${n}${people.length < n ? ` · need ${n - people.length}` : ''}` })));
+      const ul = el('ul');
+      for (const [sid, x] of people.sort((p, q) => DATA.staff[p[0]].name.localeCompare(DATA.staff[q[0]].name))) {
+        const st = DATA.staff[sid];
+        ul.append(el('li', {}, el('span', {}, el('span', { class: 'swatch', style: { background: DATA.shifts[x.s].color } }), st.name, x.n ? el('span', { class: 'muted', text: ` · ${x.n}` }) : ''),
+          el('span', { class: 'muted' }, DATA.shifts[x.s].code, st.phone ? ' · ' : '', st.phone ? el('a', { href: 'tel:' + st.phone.replace(/[^\d+]/g, ''), text: st.phone }) : '')));
+      }
+      card.append(ul);
+    }
+    grid.append(card);
+  }
+  const away = Object.entries(DATA.assign[d] || {}).filter(([sid, x]) => DATA.staff[sid] && ['PTO', 'CO'].includes(x.s));
+  if (away.length) {
+    grid.append(el('div', { class: 'card' }, el('h3', {}, 'Out today'), el('ul', {},
+      away.map(([sid, x]) => el('li', {}, el('span', { text: DATA.staff[sid].name }), el('span', { class: x.s === 'CO' ? 'need' : 'muted', text: x.s === 'CO' ? 'Call-out' : 'PTO' }))))));
+  }
+  v.append(grid);
+}
+
+// ---------- Open shifts
+function renderOpen() {
+  const v = $('v-open');
+  v.innerHTML = '';
+  const days = UI.days;
+  const end = D.add(UI.start, days - 1);
+  const gaps = shortfalls(UI.start, days, UI.unit).filter((g) => g.date >= D.today() || D.add(UI.start, days) <= D.today()); // past days only for past periods
+  v.append(el('div', { class: 'toolbar' },
+    el('button', { class: 'btn', 'aria-label': 'Previous period', onclick: () => { UI.start = D.add(UI.start, -days); render(); } }, '‹'),
+    el('h2', { text: `Open shifts · ${D.label(UI.start, { month: 'short', day: 'numeric' })} – ${D.label(end, { month: 'short', day: 'numeric' })}` }),
+    el('button', { class: 'btn', 'aria-label': 'Next period', onclick: () => { UI.start = D.add(UI.start, days); render(); } }, '›'),
+    unitSelect(UI.unit, (u) => { UI.unit = u; render(); }),
+    el('span', { class: 'spacer' }),
+    canEdit() && gaps.length > 0 && el('button', { class: 'btn primary', onclick: autoFill }, 'Auto-fill open shifts')));
+  if (!gaps.length) {
+    v.append(el('div', { class: 'card' }, el('b', { text: 'Fully staffed.' }), el('span', { class: 'muted', text: ' Every shift in this period meets its staffing target.' })));
+    return;
+  }
+  const total = gaps.reduce((t, g) => t + g.missing, 0);
+  v.append(el('p', { class: 'muted', style: { margin: 0 }, text: `${total} open ${total === 1 ? 'spot' : 'spots'}. Suggestions skip anyone already working that day, on PTO or a time-off request, or short on rest; full-time staff under their hours come first. Dashed names would go into overtime.` }));
+  const list = el('div', { class: 'open' });
+  for (const g of gaps) {
+    const cands = candidates(g.date, g.win, g.role, g.unit);
+    const sh = DATA.shifts[cands[0]?.shiftId || shiftForWindow(g.win)];
+    list.append(el('div', { class: 'item' },
+      el('div', {}, el('b', { text: `${D.label(g.date)} · ${DATA.windows[g.win].name}` }),
+        el('div', { class: 'muted', style: { fontSize: '13px' } }, el('span', { class: 'need', text: `Need ${g.missing} ${DATA.roles[g.role].name}` }), ` · ${DATA.units[g.unit]?.name || ''}${sh ? ` · ${sh.code} ${fmtTime(sh.start)}–${fmtTime(sh.end)}` : ''}`)),
+      el('div', { class: 'cands' }, cands.length ? cands.slice(0, 6).map((c) => el('button', {
+        class: 'cand' + (c.ot ? ' ot' : ''), disabled: !canEdit(),
+        title: `${c.st.type || ''} · ${c.per} h scheduled this pay period${c.st.hours ? ` of ${c.st.hours}` : ''}${c.ot ? ' · would be overtime' : ''}${c.home ? '' : ' · floats from ' + (DATA.units[c.st.unit]?.name || 'another unit')}`,
+        onclick: () => { assign(c.sid, g.date, c.shiftId, { u: g.unit }); toast(`${c.st.name} assigned ${DATA.shifts[c.shiftId].code} on ${D.label(g.date)}.`); },
+      }, c.st.name, ' ', el('small', { text: `${c.per}${c.st.hours ? '/' + c.st.hours : ''}h` }))) : el('span', { class: 'muted', text: 'No one available without a conflict.' }))));
+  }
+  v.append(list);
+}
+function autoFill() {
+  const gaps = shortfalls(UI.start, UI.days, UI.unit).filter((g) => g.date >= D.today());
+  let filled = 0, left = 0;
+  const plan = [];
+  for (const g of gaps) {
+    for (let i = 0; i < g.missing; i++) {
+      const c = candidates(g.date, g.win, g.role, g.unit).find((x) => !x.ot);
+      if (!c) { left++; continue; }
+      const val = { s: c.shiftId };
+      if (g.unit !== c.st.unit) val.u = g.unit;
+      setPath(DATA, ['assign', g.date, c.sid], val); // provisional, so the next pick sees it
+      plan.push([g.date, c.sid, val]);
+      filled++;
+    }
+  }
+  for (const [d, sid] of plan) setPath(DATA, ['assign', d, sid], undefined);
+  if (!plan.length) { toast('No one can fill these without overtime or a conflict.'); return; }
+  if (!confirm(`Auto-fill ${filled} open ${filled === 1 ? 'spot' : 'spots'} from today on, without overtime?${left ? ` ${left} can't be filled automatically.` : ''} You can change any of them afterwards.`)) return;
+  for (const [d, sid, val] of plan) edit(['assign', d, sid], val);
+  note(`Auto-filled ${filled} open shifts`);
+  render();
+  toast(`Filled ${filled}.${left ? ` ${left} still open.` : ''}`);
+}
+
+// ---------- Staff
+function renderStaff() {
+  const v = $('v-staff');
+  v.innerHTML = '';
+  const showInactive = UI.showInactive;
+  v.append(el('div', { class: 'toolbar' }, el('h2', { text: 'Staff' }),
+    roleSelect(UI.role, (r) => { UI.role = r; render(); }),
+    unitSelect(UI.unit, (u) => { UI.unit = u; render(); }),
+    el('label', { class: 'row muted', style: { fontSize: '14px' } }, el('input', { type: 'checkbox', checked: showInactive, style: { width: 'auto' }, onchange: (e) => { UI.showInactive = e.target.checked; render(); } }), 'Show inactive'),
+    el('span', { class: 'spacer' }),
+    canEdit() && el('button', { class: 'btn primary', onclick: () => staffDialog() }, '+ Add staff')));
+  const rows = Object.entries(DATA.staff)
+    .filter(([, s]) => showInactive || s.active)
+    .filter(([, s]) => UI.role === 'all' || s.role === UI.role)
+    .filter(([, s]) => UI.unit === 'all' || s.unit === UI.unit)
+    .sort((x, y) => (DATA.roles[x[1].role]?.order ?? 99) - (DATA.roles[y[1].role]?.order ?? 99) || x[1].name.localeCompare(y[1].name));
+  const ps = periodStartFor(D.today());
+  const table = el('table', { class: 'list' }, el('thead', {}, el('tr', {}, ['Name', 'Role', 'Type', 'Unit', 'Hours / period', 'This period', 'Phone', ''].map((h) => el('th', { text: h })))));
+  const tb = el('tbody');
+  for (const [sid, s] of rows) {
+    tb.append(el('tr', { class: s.active ? '' : 'inactive' },
+      el('td', {}, el('b', { text: s.name }), s.notes ? el('div', { class: 'muted', style: { fontSize: '12px' }, text: s.notes }) : ''),
+      el('td', { text: DATA.roles[s.role]?.name || s.role }),
+      el('td', { text: s.type || '' }),
+      el('td', { text: DATA.units[s.unit]?.name || '' }),
+      el('td', { text: s.hours || '' }),
+      el('td', { text: `${hoursBetween(sid, ps, D.add(ps, DATA.settings.periodDays))} h` }),
+      el('td', {}, s.phone ? el('a', { href: 'tel:' + s.phone.replace(/[^\d+]/g, ''), text: s.phone }) : ''),
+      el('td', { style: { textAlign: 'right' } }, canEdit() && el('button', { class: 'btn sm', onclick: () => staffDialog(sid) }, 'Edit'))));
+  }
+  if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, class: 'muted', style: { padding: '24px', textAlign: 'center' } }, canEdit() ? 'No staff yet. Use "+ Add staff", or load sample staff in Settings to try things out.' : 'No staff yet.')));
+  table.append(tb);
+  v.append(el('div', { class: 'card', style: { overflowX: 'auto' } }, table));
+}
+
+function dialog(title, body, actions) {
+  const d = $('dlg');
+  d.innerHTML = '';
+  d.append(el('h2', { text: title }), body, el('div', { class: 'actions' }, actions));
+  d.showModal();
+  return d;
+}
+function staffDialog(sid) {
+  const s = sid ? DATA.staff[sid] : { name: '', role: Object.keys(DATA.roles)[0], type: 'FT', unit: Object.keys(DATA.units)[0], hours: 80, phone: '', notes: '', active: true };
+  const f = {
+    name: el('input', { value: s.name, required: true, placeholder: 'First and last name' }),
+    role: el('select', {}, sorted(DATA.roles).map(([id, r]) => el('option', { value: id, selected: s.role === id }, `${r.name} · ${r.title || ''}`))),
+    type: el('select', {}, [['FT', 'Full time'], ['PT', 'Part time'], ['PRN', 'PRN / as needed']].map(([v, l]) => el('option', { value: v, selected: s.type === v }, l))),
+    unit: el('select', {}, sorted(DATA.units).map(([id, u]) => el('option', { value: id, selected: s.unit === id }, u.name))),
+    hours: el('input', { type: 'number', min: 0, max: 200, step: 1, value: s.hours }),
+    phone: el('input', { type: 'tel', value: s.phone || '', placeholder: '(704) 555-0100' }),
+    notes: el('input', { value: s.notes || '', placeholder: 'e.g. no nights, weekend option, charge nurse' }),
+    active: el('input', { type: 'checkbox', checked: s.active, style: { width: 'auto' } }),
+  };
+  const body = el('div', { class: 'form' },
+    el('label', { class: 'wide' }, 'Name', f.name),
+    el('label', {}, 'Role', f.role), el('label', {}, 'Employment', f.type),
+    el('label', {}, 'Home unit', f.unit), el('label', {}, `Hours per pay period (${DATA.settings.periodDays} days)`, f.hours),
+    el('label', {}, 'Phone', f.phone), el('label', { class: 'wide' }, 'Notes', f.notes),
+    el('label', { class: 'row', style: { gridColumn: '1/-1' } }, f.active, 'Active (shows on the schedule and in suggestions)'));
+  const d = dialog(sid ? 'Edit staff member' : 'Add staff member', body, [
+    sid && el('button', { class: 'btn danger', onclick: () => {
+      const used = Object.values(DATA.assign).some((day) => day[sid]);
+      if (used) { if (!confirm(`${s.name} has shifts on the schedule. Mark them inactive instead? (Their past shifts stay on record.)`)) return; edit(['staff', sid, 'active'], false, `Deactivated ${s.name}`); }
+      else { if (!confirm(`Remove ${s.name}?`)) return; edit(['staff', sid], undefined, `Removed ${s.name}`); }
+      d.close(); render();
+    } }, sid ? 'Remove' : ''),
+    el('span', { class: 'spacer' }),
+    el('button', { class: 'btn', onclick: () => d.close() }, 'Cancel'),
+    el('button', { class: 'btn primary', onclick: () => {
+      const name = f.name.value.trim();
+      if (!name) { f.name.focus(); return; }
+      const rec = { name, role: f.role.value, type: f.type.value, unit: f.unit.value, hours: Number(f.hours.value) || 0, phone: f.phone.value.trim(), notes: f.notes.value.trim(), active: f.active.checked };
+      edit(['staff', sid || uid()], rec, `${sid ? 'Updated' : 'Added'} ${name}`);
+      d.close(); render();
+    } }, 'Save')]);
+  f.name.focus();
+}
+
+// ---------- Time off
+function renderRequests() {
+  const v = $('v-requests');
+  v.innerHTML = '';
+  const filter = UI.reqFilter || 'open';
+  v.append(el('div', { class: 'toolbar' }, el('h2', { text: 'Time off' }),
+    el('select', { onchange: (e) => { UI.reqFilter = e.target.value; render(); } },
+      [['open', 'Upcoming'], ['pending', 'Pending'], ['all', 'All']].map(([k, l]) => el('option', { value: k, selected: filter === k }, l))),
+    el('span', { class: 'spacer' }),
+    canEdit() && el('button', { class: 'btn primary', onclick: () => requestDialog() }, '+ Add request')));
+  v.append(el('p', { class: 'muted', style: { margin: 0 }, text: 'Record time-off requests as staff hand them in. Requested days show an amber dot on the schedule and are skipped by suggestions and auto-fill. Approving PTO fills those days with PTO.' }));
+  const rows = Object.entries(DATA.requests)
+    .filter(([, r]) => filter === 'all' || (filter === 'pending' ? r.status === 'pending' : (r.to || r.from) >= D.today()))
+    .sort((x, y) => x[1].from.localeCompare(y[1].from));
+  const table = el('table', { class: 'list' }, el('thead', {}, el('tr', {}, ['Staff', 'Dates', 'Type', 'Note', 'Status', ''].map((h) => el('th', { text: h })))));
+  const tb = el('tbody');
+  for (const [id, r] of rows) {
+    const st = DATA.staff[r.staff];
+    const nd = D.diff(r.from, r.to || r.from) + 1;
+    tb.append(el('tr', {},
+      el('td', {}, el('b', { text: st?.name || 'Unknown' }), el('div', { class: 'muted', style: { fontSize: '12px' }, text: DATA.roles[st?.role]?.name || '' })),
+      el('td', { text: `${D.label(r.from)}${r.to && r.to !== r.from ? ' – ' + D.label(r.to) : ''} (${nd} ${nd === 1 ? 'day' : 'days'})` }),
+      el('td', { text: r.kind === 'pto' ? 'PTO' : 'Day off (unpaid)' }),
+      el('td', { class: 'muted', text: r.note || '' }),
+      el('td', {}, el('span', { class: 'pill ' + r.status, text: r.status })),
+      el('td', { style: { textAlign: 'right', whiteSpace: 'nowrap' } }, canEdit() && [
+        r.status !== 'approved' && el('button', { class: 'btn sm', onclick: () => decide(id, 'approved') }, 'Approve'), ' ',
+        r.status !== 'denied' && el('button', { class: 'btn sm', onclick: () => decide(id, 'denied') }, 'Deny'), ' ',
+        el('button', { class: 'btn sm danger', 'aria-label': 'Delete request', onclick: () => { if (confirm('Delete this request?')) { edit(['requests', id], undefined, `Deleted a time-off request for ${st?.name}`); render(); } } }, '✕')])));
+  }
+  if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 6, class: 'muted', style: { padding: '24px', textAlign: 'center' } }, 'No requests.')));
+  table.append(tb);
+  v.append(el('div', { class: 'card', style: { overflowX: 'auto' } }, table));
+}
+function decide(id, status) {
+  const r = DATA.requests[id];
+  const st = DATA.staff[r.staff];
+  edit(['requests', id, 'status'], status, `${status === 'approved' ? 'Approved' : 'Denied'} time off for ${st?.name} from ${D.label(r.from)}`);
+  if (status === 'approved') {
+    const conflicts = [];
+    for (let d = r.from; d <= (r.to || r.from); d = D.add(d, 1)) {
+      const x = a(d, r.staff);
+      if (isWork(x)) conflicts.push(d);
+      else if (r.kind === 'pto') edit(['assign', d, r.staff], { s: 'PTO' });
+      else if (!x) edit(['assign', d, r.staff], { s: 'OFF' });
+    }
+    if (conflicts.length) toast(`${st?.name} is still scheduled on ${conflicts.map((d) => D.label(d)).join(', ')}. Change those shifts on the Schedule tab.`, 5000);
+  }
+  render();
+}
+function requestDialog() {
+  const f = {
+    staff: el('select', {}, Object.entries(DATA.staff).filter(([, s]) => s.active).sort((x, y) => x[1].name.localeCompare(y[1].name)).map(([id, s]) => el('option', { value: id }, `${s.name} (${DATA.roles[s.role]?.name || s.role})`))),
+    from: el('input', { type: 'date', value: D.today(), required: true }),
+    to: el('input', { type: 'date', value: D.today() }),
+    kind: el('select', {}, el('option', { value: 'pto' }, 'PTO'), el('option', { value: 'off' }, 'Day off (unpaid)')),
+    note: el('input', { placeholder: 'Reason or details (optional)' }),
+  };
+  f.from.addEventListener('change', () => { if (f.to.value < f.from.value) f.to.value = f.from.value; });
+  const d = dialog('Add time-off request', el('div', { class: 'form' },
+    el('label', { class: 'wide' }, 'Staff member', f.staff), el('label', {}, 'From', f.from), el('label', {}, 'Through', f.to),
+    el('label', {}, 'Type', f.kind), el('label', { class: 'wide' }, 'Note', f.note)), [
+    el('button', { class: 'btn', onclick: () => d.close() }, 'Cancel'),
+    el('button', { class: 'btn primary', onclick: () => {
+      if (!f.staff.value || !f.from.value) return;
+      const to = f.to.value && f.to.value >= f.from.value ? f.to.value : f.from.value;
+      edit(['requests', uid()], { staff: f.staff.value, from: f.from.value, to, kind: f.kind.value, note: f.note.value.trim(), status: 'pending', at: new Date().toISOString() },
+        `Time-off request for ${DATA.staff[f.staff.value].name}, ${D.label(f.from.value)}`);
+      d.close(); render();
+    } }, 'Add')]);
+  if (!f.staff.options.length) { d.close(); toast('Add staff first.'); }
+}
+
+// ---------- Settings
+function renderSettings() {
+  const v = $('v-settings');
+  v.innerHTML = '';
+  const ed = canEdit();
+  const st = DATA.settings;
+
+  // Editing access
+  const tok = el('input', { type: 'password', placeholder: 'github_pat_…', value: LS.get('token') || '', autocomplete: 'off' });
+  const name = el('input', { placeholder: 'Your name (shown in the change log)', value: LS.get('who') || '' });
+  v.append(el('div', { class: 'card' }, el('h2', { text: 'Editing access' }),
+    el('p', { class: 'muted', style: { marginTop: 0 }, html: `Anyone with the password can view the schedule. To make changes, schedulers add a GitHub fine-grained token with <b>Contents: Read and write</b> access to only the <code>${CFG.owner}/${CFG.repo}</code> repository. It's kept on this device only.` }),
+    el('div', { class: 'form' }, el('label', {}, 'GitHub token', tok), el('label', {}, 'Your name', name)),
+    el('div', { class: 'row', style: { marginTop: '12px' } },
+      el('button', { class: 'btn primary', onclick: async () => {
+        const t = tok.value.trim();
+        if (!t) return;
+        const r = await fetch(`https://api.github.com/repos/${CFG.owner}/${CFG.repo}`, { headers: { Authorization: 'Bearer ' + t, Accept: 'application/vnd.github+json' } }).catch(() => null);
+        const j = r && r.ok ? await r.json() : null;
+        if (!j || !j.permissions?.push) { toast(r && r.status === 401 ? 'GitHub refused that token.' : "That token can't write to the schedule repository."); return; }
+        LS.set('token', t);
+        LS.set('who', name.value.trim() || null);
+        toast('Editing turned on for this device.');
+        await load();
+      } }, ed ? 'Update' : 'Turn on editing'),
+      ed && el('button', { class: 'btn', onclick: () => { LS.set('token', null); toast('Editing turned off on this device.'); render(); setSync('ok', 'View only'); } }, 'Turn off editing'),
+      el('a', { href: `https://github.com/settings/personal-access-tokens/new`, target: '_blank', rel: 'noopener', class: 'muted', style: { fontSize: '14px' } }, 'Create a token on GitHub ↗'))));
+
+  if (!ed) {
+    v.append(el('div', { class: 'card' }, el('h2', { text: 'Recent changes' }), changeLog()));
+    return;
+  }
+
+  // General
+  const g = {
+    facility: el('input', { value: st.facility }),
+    anchor: el('input', { type: 'date', value: st.anchor }),
+    periodDays: el('select', {}, [7, 14, 28].map((n) => el('option', { value: n, selected: st.periodDays === n }, `${n} days`))),
+    otWeekly: el('input', { type: 'number', min: 0, max: 80, value: st.otWeekly }),
+    minRest: el('input', { type: 'number', min: 0, max: 24, value: st.minRest }),
+    allowFloat: el('input', { type: 'checkbox', checked: st.allowFloat, style: { width: 'auto' } }),
+  };
+  v.append(el('div', { class: 'card' }, el('h2', { text: 'General' }),
+    el('div', { class: 'form' },
+      el('label', { class: 'wide' }, 'Title', g.facility),
+      el('label', {}, 'A pay period start date', g.anchor),
+      el('label', {}, 'Pay period length', g.periodDays),
+      el('label', {}, 'Overtime after (hours per week)', g.otWeekly),
+      el('label', {}, 'Minimum rest between shifts (hours)', g.minRest),
+      el('label', { class: 'row', style: { gridColumn: '1/-1' } }, g.allowFloat, 'Suggest staff from other units (floating)')),
+    el('div', { class: 'row', style: { marginTop: '12px' } }, el('button', { class: 'btn primary', onclick: () => {
+      edit(['settings'], { ...st, facility: g.facility.value.trim() || 'The Pines HC Scheduling', anchor: g.anchor.value || st.anchor, periodDays: Number(g.periodDays.value), otWeekly: Number(g.otWeekly.value) || 40, minRest: Number(g.minRest.value) || 0, allowFloat: g.allowFloat.checked }, 'Updated general settings');
+      UI.start = null; render(); toast('Saved.');
+    } }, 'Save'))));
+
+  // Shift types
+  const shiftRows = sorted(DATA.shifts).map(([id, s]) => {
+    const f = { code: el('input', { value: s.code, style: { width: '64px' } }), name: el('input', { value: s.name, style: { width: '110px' } }),
+      start: el('input', { type: 'time', value: s.start }), end: el('input', { type: 'time', value: s.end }),
+      unpaid: el('input', { type: 'number', min: 0, max: 120, value: s.unpaid || 0, style: { width: '70px' } }),
+      color: el('input', { type: 'color', value: s.color, style: { width: '48px', padding: '2px' } }),
+      covers: sorted(DATA.windows).map(([w, win]) => [w, el('input', { type: 'checkbox', checked: s.covers?.includes(w), style: { width: 'auto' }, title: win.name })]) };
+    return [id, f];
+  });
+  const shiftTable = el('table', { class: 'list' }, el('thead', {}, el('tr', {}, ['Code', 'Name', 'Start', 'End', 'Unpaid min', 'Color', 'Counts toward', 'Paid h', ''].map((h) => el('th', { text: h })))),
+    el('tbody', {}, shiftRows.map(([id, f]) => el('tr', {}, el('td', {}, f.code), el('td', {}, f.name), el('td', {}, f.start), el('td', {}, f.end), el('td', {}, f.unpaid), el('td', {}, f.color),
+      el('td', {}, f.covers.map(([w, cb]) => el('label', { class: 'row', style: { display: 'inline-flex', marginRight: '8px', gap: '4px' } }, cb, DATA.windows[w].name))),
+      el('td', { class: 'muted', text: shiftHours(DATA.shifts[id]) }),
+      el('td', {}, el('button', { class: 'btn sm danger', 'aria-label': 'Delete shift type', onclick: () => {
+        const used = Object.values(DATA.assign).some((day) => Object.values(day).some((x) => x.s === id));
+        if (used) { toast('That shift type is on the schedule, so it can\'t be deleted. Rename it instead.'); return; }
+        if (confirm(`Delete the ${DATA.shifts[id].name} shift type?`)) { edit(['shifts', id], undefined, `Deleted shift type ${DATA.shifts[id].name}`); render(); }
+      } }, '✕'))))));
+  v.append(el('div', { class: 'card', style: { overflowX: 'auto' } }, el('h2', { text: 'Shift types' }),
+    el('p', { class: 'muted', style: { marginTop: 0 }, text: 'The letter code is also a keyboard shortcut on the schedule. "Counts toward" decides which staffing targets a shift fills; a 12-hour day shift usually counts toward Day.' }),
+    shiftTable,
+    el('div', { class: 'row', style: { marginTop: '12px' } },
+      el('button', { class: 'btn primary', onclick: () => {
+        let ok = true;
+        for (const [id, f] of shiftRows) {
+          const rec = { ...DATA.shifts[id], code: f.code.value.trim() || id, name: f.name.value.trim() || id, start: f.start.value || '07:00', end: f.end.value || '15:00', unpaid: Number(f.unpaid.value) || 0, color: f.color.value, covers: f.covers.filter(([, cb]) => cb.checked).map(([w]) => w) };
+          if (JSON.stringify(rec) !== JSON.stringify(DATA.shifts[id])) ok = edit(['shifts', id], rec, `Updated shift type ${rec.name}`) && ok;
+        }
+        render(); toast('Shift types saved.');
+      } }, 'Save shift types'),
+      el('button', { class: 'btn', onclick: () => {
+        const code = prompt('Code for the new shift (e.g. M or D10):');
+        if (!code) return;
+        const id = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || uid();
+        if (DATA.shifts[id] || ['OFF', 'PTO', 'CO'].includes(id)) { toast('That code is taken.'); return; }
+        edit(['shifts', id], { code: code.trim(), name: code.trim(), start: '07:00', end: '15:00', unpaid: 30, color: '#3B8F6E', covers: ['D'], order: Object.keys(DATA.shifts).length + 1 }, `Added shift type ${code.trim()}`);
+        render();
+      } }, '+ Add shift type'))));
+
+  // Staffing targets
+  const units = sorted(DATA.units);
+  const tUnit = UI.targetUnit && DATA.units[UI.targetUnit] ? UI.targetUnit : units[0]?.[0];
+  const inputs = {};
+  const tt = el('table', { class: 'targets list' }, el('thead', {}, el('tr', {}, el('th', { text: '' }), sorted(DATA.roles).map(([, r]) => el('th', { text: r.name })))),
+    el('tbody', {}, sorted(DATA.windows).map(([w, win]) => el('tr', {}, el('th', { text: win.name }), sorted(DATA.roles).map(([r]) => {
+      const i = el('input', { type: 'number', min: 0, max: 50, value: DATA.targets[tUnit]?.[w]?.[r] ?? 0 });
+      inputs[w + '|' + r] = i;
+      return el('td', {}, i);
+    })))));
+  v.append(el('div', { class: 'card', style: { overflowX: 'auto' } }, el('h2', { text: 'Staffing targets' }),
+    el('p', { class: 'muted', style: { marginTop: 0 }, text: 'How many of each role you need on every shift, per unit. The schedule\'s coverage rows and the Open Shifts list compare against these.' }),
+    el('div', { class: 'row', style: { marginBottom: '10px' } }, 'Unit', unitSelectFor(tUnit, (u) => { UI.targetUnit = u; render(); })),
+    tt,
+    el('div', { class: 'row', style: { marginTop: '12px' } }, el('button', { class: 'btn primary', onclick: () => {
+      const t = {};
+      for (const [w] of sorted(DATA.windows)) { t[w] = {}; for (const [r] of sorted(DATA.roles)) t[w][r] = Number(inputs[w + '|' + r].value) || 0; }
+      edit(['targets', tUnit], t, `Updated staffing targets for ${DATA.units[tUnit].name}`);
+      render(); toast('Targets saved.');
+    } }, 'Save targets'))));
+
+  // Units and roles
+  const listEditor = (title, key, hint, extra) => {
+    const rows = sorted(DATA[key]).map(([id, x]) => {
+      const n = el('input', { value: x.name });
+      const t = extra ? el('input', { value: x[extra] || '', placeholder: 'Full title' }) : null;
+      return [id, n, t];
+    });
+    return el('div', { class: 'card' }, el('h2', { text: title }), el('p', { class: 'muted', style: { marginTop: 0 }, text: hint }),
+      el('div', { style: { display: 'grid', gap: '8px' } }, rows.map(([id, n, t]) => el('div', { class: 'row' }, n, t, el('button', { class: 'btn sm danger', 'aria-label': 'Delete', onclick: () => {
+        const usedBy = Object.values(DATA.staff).filter((s) => (key === 'units' ? s.unit : s.role) === id).length;
+        if (usedBy) { toast(`${usedBy} staff ${usedBy === 1 ? 'member uses' : 'members use'} this. Move them first.`); return; }
+        if (Object.keys(DATA[key]).length === 1) { toast('Keep at least one.'); return; }
+        if (confirm(`Delete ${DATA[key][id].name}?`)) { edit([key, id], undefined, `Deleted ${DATA[key][id].name}`); if (key === 'units') edit(['targets', id], undefined); render(); }
+      } }, '✕')))),
+      el('div', { class: 'row', style: { marginTop: '12px' } },
+        el('button', { class: 'btn primary', onclick: () => {
+          for (const [id, n, t] of rows) {
+            const rec = { ...DATA[key][id], name: n.value.trim() || DATA[key][id].name };
+            if (t) rec[extra] = t.value.trim();
+            if (JSON.stringify(rec) !== JSON.stringify(DATA[key][id])) edit([key, id], rec, `Renamed ${DATA[key][id].name} to ${rec.name}`);
+          }
+          render(); toast('Saved.');
+        } }, 'Save'),
+        el('button', { class: 'btn', onclick: () => {
+          const nm = prompt(`Name of the new ${key === 'units' ? 'unit' : 'role'}:`);
+          if (!nm) return;
+          const id = key === 'roles' ? (nm.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') || uid()) : uid();
+          if (DATA[key][id]) { toast('That already exists.'); return; }
+          edit([key, id], { name: nm.trim(), order: Object.keys(DATA[key]).length + 1, ...(extra ? { [extra]: '' } : {}) }, `Added ${nm.trim()}`);
+          render();
+        } }, key === 'units' ? '+ Add unit' : '+ Add role')));
+  };
+  v.append(el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '14px' } },
+    listEditor('Units', 'units', 'Halls, wings or neighborhoods that are staffed separately.'),
+    listEditor('Roles', 'roles', 'Nursing roles. The short name shows on the schedule.', 'title')));
+
+  // Data
+  const imp = el('input', { type: 'file', accept: '.json,application/json', class: 'hidden', onchange: async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const obj = JSON.parse(await file.text());
+      if (!obj || typeof obj !== 'object' || !obj.staff || !obj.shifts) throw new Error('not a schedule backup');
+      if (!confirm('Replace the whole schedule with this backup? Everyone will see the restored copy.')) return;
+      for (const k of Object.keys(defaults())) if (k in obj) edit([k], obj[k]);
+      note('Restored a backup');
+      render(); toast('Backup restored.');
+    } catch (err) { toast("That file isn't a schedule backup."); }
+  } });
+  v.append(el('div', { class: 'card' }, el('h2', { text: 'Data' }),
+    el('p', { class: 'muted', style: { marginTop: 0 }, text: 'The schedule is saved automatically and encrypted with the department password before it leaves this device. A backup file is NOT encrypted; keep it somewhere private.' }),
+    el('div', { class: 'row' },
+      el('button', { class: 'btn', onclick: () => download(`pines-hc-schedule-${D.today()}.json`, JSON.stringify(DATA, null, 1), 'application/json') }, 'Download backup'),
+      el('button', { class: 'btn', onclick: () => imp.click() }, 'Restore backup…'), imp,
+      !Object.keys(DATA.staff).length && el('button', { class: 'btn', onclick: loadSample }, 'Load sample staff'),
+      el('button', { class: 'btn', onclick: () => load() }, 'Reload from server'))));
+
+  v.append(el('div', { class: 'card' }, el('h2', { text: 'Recent changes' }), changeLog()));
+}
+function changeLog() {
+  const items = Object.entries(DATA.log || {}).sort((x, y) => y[0].localeCompare(x[0])).slice(0, 60);
+  if (!items.length) return el('p', { class: 'muted', text: 'No changes yet.' });
+  return el('ul', { style: { margin: 0, paddingLeft: '18px', display: 'grid', gap: '3px', fontSize: '14px' } },
+    items.map(([, l]) => el('li', {}, el('span', { class: 'muted', text: `${new Date(l.at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · ${l.by} · ` }), l.msg)));
+}
+
+// Clearly fake people, to try the app out. Delete them before real use.
+function loadSample() {
+  if (!confirm('Add 16 sample staff members (named "Sample …") and two weeks of sample shifts? Remove them before real use.')) return;
+  const u = Object.keys(DATA.units)[0];
+  const people = [['RN', 4], ['LPN', 3], ['CNA', 7], ['CMA', 2]];
+  const ids = [];
+  for (const [role, n] of people) for (let i = 1; i <= n; i++) {
+    const id = uid();
+    ids.push([id, role, i]);
+    edit(['staff', id], { name: `Sample ${role} ${i}`, role, type: i === n ? 'PRN' : i === n - 1 ? 'PT' : 'FT', unit: u, hours: i === n ? 0 : i === n - 1 ? 48 : 80, phone: '', notes: 'Sample — delete before real use', active: true });
+  }
+  const ps = periodStartFor(D.today());
+  const order = ['D', 'D', 'E', 'E', 'N', 'N', 'D', 'E'];
+  for (const [id, role, i] of ids) {
+    for (let k = 0; k < DATA.settings.periodDays; k++) {
+      if ((k + i) % 7 === 5 || (k + i) % 7 === 6) continue;
+      if (DATA.staff[id].type === 'PRN') continue;
+      if (DATA.staff[id].type === 'PT' && k % 2) continue;
+      const s = order[(i + role.length) % order.length];
+      if (DATA.shifts[s]) edit(['assign', D.add(ps, k), id], { s });
+    }
+  }
+  note('Loaded sample staff');
+  render();
+  toast('Sample staff added.');
+}
+
+// ---------- Unlock
+async function unlockWith(key) {
+  KEY = key;
+  $('lock').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  const draft = await loadDraft();
+  if (draft) { DATA = draft; migrate(); render(); }
+  await load({ quiet: !!draft });
+  clearInterval(refreshTimer);
+  // Viewers (and idle editors) pick up other people's changes every two minutes.
+  refreshTimer = setInterval(() => { if (!OPS.length && !saving && document.visibilityState === 'visible' && !$('dlg').open && $('pop').classList.contains('hidden')) load({ quiet: true }); }, 120000);
+}
+
+$('lockform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('unlock'), err = $('lockerr');
+  btn.disabled = true; btn.textContent = 'Unlocking…'; err.textContent = '';
+  try {
+    if (!LOCK) throw new Error('not built');
+    const key = await deriveKey($('pw').value);
+    if (!(await checkKey(key))) throw new Error('bad');
+    if ($('remember').checked) LS.set('key', b64.enc(await crypto.subtle.exportKey('raw', key)));
+    $('pw').value = '';
+    await unlockWith(key);
+  } catch (e2) {
+    err.textContent = e2.message === 'not built' ? 'This page was not built with a password.' : 'Incorrect password.';
+  }
+  btn.disabled = false; btn.textContent = 'Unlock';
+});
+$('lockbtn').addEventListener('click', () => {
+  LS.set('key', null);
+  location.reload();
+});
+$('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) show(b.dataset.v); });
+window.addEventListener('beforeunload', (e) => { if (OPS.length) { e.preventDefault(); e.returnValue = ''; } });
+
+(async () => {
+  const saved = LS.get('key');
+  if (saved && LOCK) {
+    try {
+      const key = await crypto.subtle.importKey('raw', b64.dec(saved), 'AES-GCM', true, ['encrypt', 'decrypt']);
+      if (await checkKey(key)) { await unlockWith(key); return; }
+    } catch {}
+    LS.set('key', null);
+  }
+})();
+</script>
+</body>
+</html>
