@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090f">
+<meta name="robots" content="noindex, nofollow">
+<title>Carterlink v2 — atomic clock and shared number</title>
+<meta name="description" content="A shared atomic clock and a six-digit number that changes every five minutes. Version 2 is clock and number only, with no chat.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2307090f'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23f4c56a' stroke-width='2'/%3E%3Cpath d='M16 10v6l4 2' stroke='%237ce7c1' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body class="locked">
+
+<div id="lock" class="lock">
+  <form id="lock-form" class="lock-card" autocomplete="off">
+    <div class="lock-brand">
+      <span class="mark" aria-hidden="true"></span>
+      <span class="eyebrow">CCA client tool</span>
+    </div>
+    <h1>Carterlink <span class="version">v2</span></h1>
+    <p class="lock-copy">A shared clock and a number that changes every five minutes for everyone. This version has no chat.</p>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Client password" required autofocus>
+    <button id="unlock" type="submit">Unlock Carterlink</button>
+    <p id="lock-error" class="lock-error" role="alert"></p>
+    <a class="back" href="../#services">← Back to CCA services</a>
+  </form>
+</div>
+
+<div id="app" class="app" hidden>
+  <header class="top">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <h1>Carterlink <span class="version">v2</span></h1>
+        <p>one clock · one number</p>
+        <a class="back" href="../#services">← CCA services</a>
+      </div>
+    </div>
+
+    <div class="clock" aria-label="Atomic clock">
+      <div class="clock-label">
+        <span>Atomic time</span>
+        <span id="time-source" class="pill" title="Waiting for a time source">syncing…</span>
+      </div>
+      <div class="clock-time">
+        <span id="clock">--:--:--</span><span id="millis" class="ms">.000</span>
+      </div>
+      <div class="clock-meta">
+        <span id="date">—</span>
+        <span class="sep">·</span>
+        <span id="utc">UTC --:--:--</span>
+        <span class="sep">·</span>
+        <span id="zone">—</span>
+      </div>
+      <div id="sync-detail" class="sync-detail">connecting to the time source…</div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="number-card" aria-labelledby="number-heading">
+      <div class="eyebrow">
+        <span id="number-heading">The number</span>
+        <span id="round-label" class="round-label">round —</span>
+      </div>
+      <div id="number" class="number" aria-live="polite">000 000</div>
+      <div class="number-foot">
+        <span>changes in <strong id="countdown">05:00</strong></span>
+        <span class="shared">the same number for every visitor, everywhere</span>
+      </div>
+      <div class="progress" aria-hidden="true"><div id="round-progress"></div></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>Version 2 · clock and number only, no chat.</span>
+    <a href="../#services">CCA Consulting services →</a>
+  </footer>
+</div>
+
+<noscript>
+  <p class="noscript">Carterlink needs JavaScript to unlock the clock and calculate the shared number.</p>
+</noscript>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
