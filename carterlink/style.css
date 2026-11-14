@@ -218,6 +218,8 @@ a {
   min-height: 0;
   display: grid;
   place-items: center;
+  align-content: center;
+  gap: clamp(18px, 3vh, 32px);
   padding: clamp(20px, 4vh, 48px) clamp(20px, 4vw, 48px);
 }
 
@@ -319,6 +321,162 @@ a {
   transform-origin: left center;
   box-shadow: 0 0 12px rgba(244, 197, 106, 0.5);
   will-change: transform;
+}
+
+/* ---- message board ------------------------------------------------------ */
+
+.board {
+  width: min(100%, 1000px);
+  padding: clamp(20px, 3vw, 32px) clamp(20px, 4vw, 40px);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01));
+}
+
+.board-status {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.board-status.live {
+  color: var(--mint);
+}
+
+.board-status.down {
+  color: var(--danger);
+}
+
+.board-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  max-height: min(48vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 2px;
+}
+
+.board-list li {
+  padding: 9px 12px;
+  border-radius: 12px;
+}
+
+.board-list li:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.board-list li.fresh {
+  animation: fresh 1.6s ease-out;
+}
+
+@keyframes fresh {
+  from { background: rgba(124, 231, 193, 0.14); }
+}
+
+.board-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.board-meta b {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.board-meta time {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.board-body {
+  margin: 3px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.board-empty {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.board-form {
+  display: grid;
+  grid-template-columns: minmax(90px, 160px) 1fr auto;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.board-form input,
+.board-form textarea {
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  resize: none;
+  max-height: 160px;
+}
+
+.board-form input:focus,
+.board-form textarea:focus {
+  outline: none;
+  border-color: rgba(244, 197, 106, 0.55);
+}
+
+.board-form button {
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--gold);
+  color: #1a1306;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.board-form button:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.board-error {
+  min-height: 0;
+  margin: 8px 0 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.board-error:empty {
+  display: none;
+}
+
+.board-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .board-form {
+    grid-template-columns: 1fr auto;
+  }
+
+  .board-form input {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ---- footer ------------------------------------------------------------- */

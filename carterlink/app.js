@@ -1,4 +1,5 @@
 import { ROUND_MS, bucketAt, numberFor, nextChangeAt, formatCountdown } from './shared.js';
+import { deriveBoardSecret, saveBoardSecret, loadBoardSecret, startBoard } from './board.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -98,9 +99,12 @@ async function passwordMatches(value) {
   return bytesToHex(bits) === PASSWORD.hash;
 }
 
+let boardSecret = null;
+
 function unlockedThisSession() {
   try {
-    return sessionStorage.getItem(UNLOCK_KEY) === '1';
+    boardSecret = loadBoardSecret();
+    return sessionStorage.getItem(UNLOCK_KEY) === '1' && Boolean(boardSecret);
   } catch {
     return false;
   }
@@ -132,6 +136,11 @@ function start() {
     }
   });
   requestAnimationFrame(tick);
+  if (boardSecret) {
+    startBoard(boardSecret).catch(() => {
+      $('board-status').textContent = 'unavailable';
+    });
+  }
 }
 
 function ageText(seconds) {
@@ -319,6 +328,8 @@ els.lockForm.addEventListener('submit', async (event) => {
       els.password.select();
       return;
     }
+    boardSecret = await deriveBoardSecret(value);
+    saveBoardSecret(boardSecret);
     rememberUnlock();
     showApp();
   } catch (error) {
